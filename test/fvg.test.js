@@ -20,7 +20,7 @@ test('every pair: the verb and its preposition / article are gaps, the noun is s
 });
 
 test('the table asks for the verb of each noun part; both verbs count for zur Verfügung', () => {
-  const [block] = F.table(F.PAIRS).blocks;
+  const [block] = F.verbsTable(F.PAIRS).blocks;
   const row = (label) => block.answers[0][block.rows.indexOf(label)];
   assert.deepEqual(row('Kritik … an'), ['üben']);
   assert.deepEqual(row('zur Verfügung …'), ['stellen', 'stehen']);

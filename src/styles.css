@@ -127,8 +127,8 @@ kbd {
 }
 .topic-title { font-size: 20px; }
 .topic-sub { font-weight: 400; color: var(--muted); }
-/* The daily exercises, above the topics. */
-#daily { margin-bottom: 16px; }
+/* The daily exercises, above the topics: a row of their own, the cards sharing it. */
+#daily { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-bottom: 16px; }
 #daily:empty { display: none; }
 .topic.daily { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); }
 .topic.daily.done .topic-sub { color: var(--ok); font-weight: 600; }
@@ -205,8 +205,9 @@ button.ghost { border: none; background: none; padding: 6px 10px; color: var(--m
   border: 1px solid currentColor;
 }
 .tag.plain { color: var(--text); }
-/* The topic a Daily review sentence comes from. */
+/* The topic a Daily review sentence or a Daily tables table comes from. */
 .source { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: -12px 0 10px; }
+#table-source { margin: 0 0 4px; }
 
 .prompt { font-size: 19px; color: var(--muted); margin: 0 0 6px; }
 .prompt-label {

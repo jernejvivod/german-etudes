@@ -368,11 +368,11 @@
     defaults: { kinds: ['werden'], tenses: ['praes', 'praet', 'perf'], length: 10 },
     options: [
       {
-        key: 'kinds', label: 'Kind of passive', type: 'checkboxes', min: 1,
+        key: 'kinds', label: 'Kind of passive', type: 'checkboxes', min: 1, table: true,
         choices: Object.entries(KINDS).map(([value, k]) => ({ value, label: k.label, detail: k.detail })),
       },
       {
-        key: 'tenses', label: 'Tenses', type: 'checkboxes', inline: true, min: 1,
+        key: 'tenses', label: 'Tenses', type: 'checkboxes', inline: true, min: 1, table: true,
         choices: TENSES.map((value) => ({ value, label: TENSE_LABELS[value] })),
       },
       {
@@ -384,6 +384,7 @@
     ],
     validate,
     sentences,
+    table: tableStep,
     sessions: [
       {
         label: 'Start',

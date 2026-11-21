@@ -20,7 +20,7 @@ Esc goes up one level (round → options → topic list), ⇧Esc straight to the
 
 ## Daily review
 
-Once a topic sits, turn on *Sentences learnt* on its options screen: its current settings (for example Passiv with only Präsens and Präteritum) become what it brings to the **Daily review** on the home screen. The review mixes sentences from every learnt topic in equal shares, Short, Normal or Long (about 10, 20 or 30), the remainder going to the topics seen least recently, and uses *My Anki words*. Changed settings reach the review only with *Use these settings*. A day starts at 4:00.
+Once a topic sits, turn on *Sentences learnt* on its options screen: its current settings (for example Passiv with only Präsens and Präteritum) become what it brings to the **Daily review** on the home screen. The review mixes sentences from every learnt topic in equal shares, Short, Normal or Long (about 10, 20 or 30), the remainder going to the topics seen least recently, and uses *My Anki words*. Changed settings reach the review only with *Use these settings*. A day starts at 4:00. Likewise, *Table learnt* on Adjektivendungen, Artikelwörter, Passiv, Präpositionen, Pronomen and Nominalisierung puts the topic's fixed table into **Daily tables**, which has you write out every learnt table from memory, the least recently done first.
 
 ## Anki decks
 

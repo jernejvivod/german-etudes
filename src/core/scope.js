@@ -1,7 +1,9 @@
-// A topic's settings as the shell and the Daily review see them: fitting saved ones to the options offered now, what is
-// wrong with them, and the part that is a topic's learnt scope — every option but those marked round: true, which only
-// shape the topic's own round (its length, the order of the adjectives), and those with a daily value, which the Daily
-// review always uses (daily: 'anki', My Anki words).
+// A topic's settings as the shell and the daily exercises see them: fitting saved ones to the options offered now, what
+// is wrong with them, and the part that is a topic's learnt scope. Each kind of mark (daily.js) has its own:
+//   sentences: every option but those marked round: true, which only shape the topic's own round (its length, the order
+//     of the adjectives), and those with a daily value, which the Daily review always uses (daily: 'anki', My Anki words);
+//   table: the options marked table, the ones its table depends on — table: true, or a function giving the part of the
+//     value the table holds (Präpositionen's case table only has the groups with a case of their own).
 (function (root, factory) {
   const api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;
@@ -32,33 +34,35 @@
     return topic.validate?.(settings) || null;
   }
 
-  const inScope = (opt) => !opt.round && !('daily' in opt);
+  const inScope = (opt, kind) => (kind === 'table' ? !!opt.table : !opt.round && !('daily' in opt));
+  const scoped = (opt, value, kind) => (kind === 'table' && typeof opt.table === 'function' ? opt.table(value) : value);
 
-  // The settings without the round and daily options, keys in the options' order.
-  function scopeOf(topic, settings) {
-    return Object.fromEntries(topic.options.filter(inScope).map((opt) => [opt.key, settings[opt.key]]));
+  // The part of the settings a kind of mark keeps, keys in the options' order.
+  function scopeOf(topic, settings, kind = 'sentences') {
+    return Object.fromEntries(topic.options.filter((opt) => inScope(opt, kind)).map((opt) => [opt.key, scoped(opt, settings[opt.key], kind)]));
   }
 
-  // Whether two settings have the same scope (a stored one is fitted first, as the Daily review would use it).
-  function sameScope(topic, a, b) {
-    const key = (s) => JSON.stringify(scopeOf(topic, fitSettings(topic, s)));
+  // Whether two settings have the same scope (a stored one is fitted first, as the daily exercise would use it).
+  function sameScope(topic, a, b, kind = 'sentences') {
+    const key = (s) => JSON.stringify(scopeOf(topic, fitSettings(topic, s), kind));
     return key(a) === key(b);
   }
 
   // The scope in words, so two of them can be told apart: the chosen parts ("Vorgangspassiv · Präsens, Präteritum"; an
-  // option with every part ticked is "all …", and with nothing left out just "all"), then the switches that are on
-  // ("with hints") and the other choices ("Cards due within: 1 week").
-  function scopeText(topic, settings) {
-    const options = topic.options.filter(inScope);
+  // option with every part ticked is "all …", and with nothing left out just "all", or for a table "the whole table"),
+  // then the switches that are on ("with hints") and the other choices ("Cards due within: 1 week").
+  function scopeText(topic, settings, kind = 'sentences') {
+    const options = topic.options.filter((opt) => inScope(opt, kind));
+    const values = scopeOf(topic, settings, kind);
     const parts = options.filter((opt) => opt.type === 'checkboxes').map((opt) => {
-      const chosen = opt.choices.filter((c) => settings[opt.key]?.includes(c.value));
-      const all = chosen.length === opt.choices.length;
+      const chosen = opt.choices.filter((c) => values[opt.key]?.includes(c.value));
+      const all = chosen.length === scoped(opt, choiceValues(opt), kind).length;
       return { all, text: all ? `all ${opt.label.toLowerCase()}` : chosen.map((c) => c.label).join(', ') };
     });
-    const words = parts.every((p) => p.all) ? ['all'] : parts.map((p) => p.text);
+    const words = parts.every((p) => p.all) ? [kind === 'table' ? 'the whole table' : 'all'] : parts.map((p) => p.text);
     for (const opt of options) {
-      if (opt.type === 'toggle' && settings[opt.key]) words.push(`with ${opt.label.toLowerCase()}`);
-      const choice = opt.type === 'radio' && opt.choices.find((c) => c.value === settings[opt.key]);
+      if (opt.type === 'toggle' && values[opt.key]) words.push(`with ${opt.label.toLowerCase()}`);
+      const choice = opt.type === 'radio' && opt.choices.find((c) => c.value === values[opt.key]);
       if (choice) words.push(`${opt.label}: ${choice.label}`);
     }
     return words.join(' · ');

@@ -1,12 +1,14 @@
-// The daily exercises: which topics are marked learnt, when each came up, and the Daily review, a pseudo-topic that
-// mixes sentences from every topic marked learnt (in the scope saved with the mark, see scope.js).
+// The daily exercises: which topics are marked learnt, when each came up, and two pseudo-topics: the Daily review, which
+// mixes sentences from every topic marked Sentences learnt, and Daily tables, which goes through every table marked
+// Table learnt — each in the scope saved with the mark (scope.js).
 //
 // Kept between sessions (store.js):
 //   etudes-learnt: { [topicId]: { sentences?: { settings, since }, table?: { settings, since } } } — settings: the scope
 //   etudes-daily:  { sentences: { done: day, seen: { [topicId]: ms }, extra: { [topicId]: ms } }, table: { … } }
 //     — the same kinds (KINDS) in both
-//     done: the day the review last reached its summary; seen: when the Daily review last asked a topic's sentence;
-//     extra: when a topic last got one sentence more than its share (so the remainder rotates)
+//     done: the day the exercise was last finished; seen: when the Daily review last asked a topic's sentence, or Daily
+//     tables last checked its table; extra: when a topic last got one sentence more than its share (so the remainder
+//     rotates)
 // A day starts at 4:00, so a late evening still counts as the day before. Unreadable data counts as none.
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
@@ -147,18 +149,36 @@
     }
   }
 
+  // ---------- The daily exercises ----------
+
+  const dateText = (ms) => new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+  // The topics marked learnt for a kind that still offer it (t.sentences, t.table), in the registry's order.
+  const learntOf = (kind, topics, all = marks()) => topics.filter((t) => t[kind] && all[t.id]?.[kind]);
+
+  // The learnt topics' marks of a kind, fitted to the options offered now: ready, [{ topic, settings, since }], and a
+  // note on each whose settings no longer fit (leftOut).
+  function fitLearnt(kind, learnt, all) {
+    const ready = [];
+    const leftOut = [];
+    for (const t of learnt) {
+      const settings = scope.fitSettings(t, all[t.id][kind].settings);
+      if (scope.settingsProblem(t, settings)) leftOut.push(`${t.title}: its learnt settings no longer fit — open it and save them again.`);
+      else ready.push({ topic: t, settings, since: all[t.id][kind].since });
+    }
+    return { ready, leftOut };
+  }
+
   // ---------- The Daily review ----------
 
   const NONE_LEARNT = 'No topic is marked learnt yet. Open a topic, choose the parts you know and turn on Sentences learnt.';
-
-  const dateText = (ms) => new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 
   // The Daily review as a topic the shell opens like any other. topics: the registry; clock: now in ms.
   function reviewTopic(topics, clock = Date.now) {
     let ready = []; // [{ topic, settings, since }]: the learnt topics this review uses, their scope fitted
     let leftOut = []; // a note on each learnt topic it cannot use
 
-    const learnt = (all = marks()) => topics.filter((t) => t.sentences && all[t.id]?.sentences);
+    const learnt = (all = marks()) => learntOf('sentences', topics, all);
 
     // Loads the learnt topics' data (each loader once: most topics share vocab.prepare) and checks their scopes.
     async function prepare() {
@@ -174,15 +194,9 @@
         }
         errors.set(load, error || null);
       }
-      ready = [];
-      leftOut = [];
-      for (const t of topicsLearnt) {
-        const settings = scope.fitSettings(t, all[t.id].sentences.settings);
-        const error = errors.get(t.prepare);
-        if (error) leftOut.push(`${t.title}: ${error}`);
-        else if (scope.settingsProblem(t, settings)) leftOut.push(`${t.title}: its learnt settings no longer fit — open it and save them again.`);
-        else ready.push({ topic: t, settings, since: all[t.id].sentences.since });
-      }
+      const failed = topicsLearnt.filter((t) => errors.get(t.prepare));
+      ({ ready, leftOut } = fitLearnt('sentences', topicsLearnt.filter((t) => !failed.includes(t)), all));
+      leftOut.unshift(...failed.map((t) => `${t.title}: ${errors.get(t.prepare)}`));
       return null;
     }
 
@@ -210,6 +224,7 @@
     return {
       id: 'daily',
       kind: 'sentences',
+      unit: 'topic',
       title: 'Daily review',
       intro: (settings) => ['Every learnt topic comes up today, in equal shares, mixed.', shortWarning(ready.length, settings.length), ...leftOut]
         .filter(Boolean).join(' '),
@@ -226,10 +241,76 @@
     };
   }
 
+  // ---------- Daily tables ----------
+
+  // Every learnt table as a topic the shell opens like any other, one table step each. topics: the registry; clock: now
+  // in ms. Done for the day once each table has been checked that day (not necessarily without mistakes), in one round
+  // or over several.
+  function tablesTopic(topics, clock = Date.now) {
+    const learnt = (all = marks()) => learntOf('table', topics, all);
+    const titles = topics.filter((t) => t.table).map((t) => t.title);
+    const open = titles.length > 1 ? `${titles.slice(0, -1).join(', ')} or ${titles.at(-1)}` : titles[0];
+    const noneLearnt = `No table is marked learnt yet. Open ${open} and turn on Table learnt on its options screen.`;
+
+    // The learnt tables it can use, the least recently done first (never done: first of all; ties in the registry's
+    // order), their scope fitted; and a note on each mark it cannot use: one whose topic is gone or no longer has a
+    // table, or whose settings no longer fit.
+    function usable() {
+      const all = marks();
+      const gone = Object.keys(all)
+        .filter((id) => all[id].table && !topics.some((t) => t.id === id && t.table))
+        .map((id) => `${topics.find((t) => t.id === id)?.title ?? id}: there is no such table any more.`);
+      const { ready, leftOut } = fitLearnt('table', learnt(all), all);
+      const order = byLeastRecent('table', ready.map((r) => r.topic));
+      return { ready: order.map((t) => ready.find((r) => r.topic === t)), leftOut: [...gone, ...leftOut] };
+    }
+
+    function build(settings, rnd = Math.random) {
+      const checked = new Set(); // the topics whose table was checked in this round
+      const { ready } = usable();
+      return ready.map(({ topic: t, settings: own }) => {
+        const step = t.table(own, rnd);
+        return {
+          ...step,
+          label: `${t.title} — ${step.label}`,
+          topicTitle: t.title,
+          onChecked: () => {
+            if (checked.has(t.id)) return; // a retry
+            checked.add(t.id);
+            const now = clock();
+            noteSeen('table', t.id, now);
+            const { seen } = log('table');
+            if (ready.every(({ topic }) => topic.id in seen && dayOf(seen[topic.id]) === dayOf(now))) noteDone('table', [], now);
+          },
+        };
+      });
+    }
+
+    return {
+      id: 'daily-tables',
+      kind: 'table',
+      unit: 'table',
+      title: 'Daily tables',
+      intro: () => ['Write out every table you have marked learnt from memory, the least recently done first.', ...usable().leftOut].join(' '),
+      defaults: {},
+      options: [],
+      listing: () => usable().ready.map(({ topic, settings, since }) => ({
+        title: `${topic.title} — ${topic.table(settings).label}`,
+        text: `${scope.scopeText(topic, settings, 'table')} · learnt ${dateText(since)}`,
+      })),
+      validate: () => {
+        const { ready, leftOut } = usable();
+        return ready.length ? null : leftOut.length ? 'None of the learnt tables can be used — see above.' : noneLearnt;
+      },
+      sessions: [{ label: 'Start', build }],
+      learnt,
+    };
+  }
+
   return {
     ROLLOVER_HOURS, LENGTHS, KINDS, dayOf,
     marks, markOf, setMark,
     log, noteSeen, noteDone, doneToday,
-    byLeastRecent, shares, shortWarning, interleave, reviewTopic,
+    byLeastRecent, shares, shortWarning, interleave, reviewTopic, tablesTopic,
   };
 });

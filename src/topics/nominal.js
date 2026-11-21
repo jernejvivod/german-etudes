@@ -225,9 +225,12 @@
   // n sentences in the settings' scope, for a round here (its table takes the same ones) and for the Daily review.
   const sentences = (settings, n, rnd = Math.random) => drillStep(buildRound({ ...settings, length: n }, rnd));
 
+  // Without items, the connectors only: the table that can be learnt by heart.
+  const tableStep = (items) => ({ type: 'table', label: 'Konnektor → Präposition', table: tables(items) });
+
   function steps(settings, rnd) {
     const drill = sentences(settings, settings.length, rnd);
-    return [{ type: 'table', label: 'Konnektor → Präposition', table: tables(drill.items) }, drill];
+    return [tableStep(drill.items), drill];
   }
 
   return {
@@ -259,9 +262,10 @@
       },
     ],
     sentences,
+    table: () => tableStep(),
     sessions: [
       { label: 'Start', build: (settings, rnd = Math.random) => steps(settings, rnd) },
-      { label: 'Table only', build: () => [{ type: 'table', label: 'Konnektor → Präposition', table: tables() }] },
+      { label: 'Table only', build: () => [tableStep()] },
     ],
 
     DIRECTIONS, ENTRIES, CONNECTORS, buildItem, buildRound, phraseFor, verbGroup, tables,

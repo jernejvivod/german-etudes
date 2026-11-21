@@ -668,7 +668,7 @@
     prepare: vocab.prepare,
     options: [
       {
-        key: 'kinds', label: 'Pronouns', type: 'checkboxes', min: 1, choices: [
+        key: 'kinds', label: 'Pronouns', type: 'checkboxes', min: 1, table: true, choices: [
           { value: 'personal', label: KIND_LABELS.personal, detail: 'mich, mir, ihn, ihm, ihnen · Ich gebe ihn ihr.' },
           { value: 'reflexive', label: KIND_LABELS.reflexive, detail: 'Ich wasche mich. · Ich wasche mir die Hände.' },
           { value: 'relative', label: KIND_LABELS.relative, detail: 'der Mann, dem ich helfe · deren, denen, dessen' },
@@ -686,6 +686,7 @@
       },
     ],
     sentences,
+    table: tableStep,
     sessions: [
       {
         label: 'Start',

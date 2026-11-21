@@ -633,10 +633,14 @@
 
   // ---------- Case table ----------
 
+  // The groups the case table holds: the chosen ones with a case of their own, or all of those when none is chosen.
+  function caseGroups(groups = []) {
+    const chosen = groups.filter((g) => PREPOSITIONS[g]);
+    return chosen.length ? chosen : Object.keys(PREPOSITIONS);
+  }
+
   function caseTable(settings, rnd = Math.random) {
-    const chosen = settings.groups.filter((g) => PREPOSITIONS[g]);
-    const groups = chosen.length ? chosen : Object.keys(PREPOSITIONS);
-    const preps = shuffle(groups.flatMap((g) => PREPOSITIONS[g].map((p) => ({ p, g }))), rnd);
+    const preps = shuffle(caseGroups(settings.groups).flatMap((g) => PREPOSITIONS[g].map((p) => ({ p, g }))), rnd);
     const size = 6;
     const blocks = [];
     for (let i = 0; i < preps.length; i += size) {
@@ -681,7 +685,7 @@
     prepare: vocab.prepare,
     options: [
       {
-        key: 'groups', label: 'Prepositions', type: 'checkboxes', min: 1,
+        key: 'groups', label: 'Prepositions', type: 'checkboxes', min: 1, table: caseGroups,
         choices: GROUPS.map((value) => ({
           value,
           label: GROUP_LABELS[value],
@@ -699,6 +703,7 @@
       },
     ],
     sentences,
+    table: tableStep,
     sessions: [
       {
         label: 'Start',
@@ -708,7 +713,7 @@
           return [tableStep(settings, rnd), drill];
         },
       },
-      { label: 'Case table only', build: (settings) => [tableStep(settings)] },
+      { label: 'Case table only', build: (settings, rnd) => [tableStep(settings, rnd)] },
     ],
 
     PREPOSITIONS, NOUNS, FRAMES,

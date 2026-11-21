@@ -9,11 +9,7 @@ const { withApp, skip } = require('./harness.js');
 const { dayOf } = require('../../src/core/daily.js');
 
 test('marking topics learnt and the Daily review', { timeout: 120000, skip }, () => withApp(async (app) => {
-  const { evaluate, waitFor, screen, focused, click, text, key, shot, openTopic, said } = app;
-  // A choice on the options screen by its label (Perfekt, Short …).
-  const choose = (label) => evaluate(`[...document.querySelectorAll('#options label.radio')]
-    .find((l) => l.querySelector('b').textContent === ${JSON.stringify(label)}).querySelector('input').click()`);
-  const learnt = () => evaluate(`JSON.parse(localStorage.getItem('etudes-learnt'))`);
+  const { evaluate, waitFor, screen, focused, click, text, key, shot, openTopic, choose, learnt, said } = app;
   const note = () => evaluate(`document.querySelector('#options-learnt .learnt-note')?.textContent ?? null`);
   const card = () => text('#daily [data-topic="daily"] .topic-sub');
   const tagsShown = () => evaluate(`document.getElementById('tags').childElementCount > 0`);
@@ -47,11 +43,11 @@ test('marking topics learnt and the Daily review', { timeout: 120000, skip }, ()
   assert.equal(await note(), null);
   await choose('20 sentences');
   assert.equal(await note(), null, 'the length is not part of the scope');
-  // Settings that do not work cannot be taken over, but the mark can still be removed.
+  // Settings that do not work cannot be taken over (nor marked Table learnt), but the mark can still be removed.
   await choose('Präsens');
   await choose('Präteritum');
   assert.equal(await text('#options-error'), 'Pick at least one: tenses.');
-  assert.deepEqual(await evaluate(`[...document.querySelectorAll('#options-learnt input, #options-learnt button')].map((c) => c.disabled)`), [false, true]);
+  assert.deepEqual(await evaluate(`[...document.querySelectorAll('#options-learnt input, #options-learnt button')].map((c) => c.disabled)`), [false, true, true]);
   await choose('Präsens');
   await choose('Präteritum');
   assert.equal(await note(), null);

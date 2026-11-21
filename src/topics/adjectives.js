@@ -492,6 +492,7 @@
       { key: 'hints', label: 'Hints', type: 'toggle', text: 'Show case & gender before answering' },
     ],
     sentences,
+    table: tableStep,
     sessions: [
       {
         label: 'Start',

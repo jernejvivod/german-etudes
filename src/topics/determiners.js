@@ -242,7 +242,7 @@
     prepare: vocab.prepare,
     options: [
       {
-        key: 'families', label: 'Determiners', type: 'checkboxes', min: 1,
+        key: 'families', label: 'Determiners', type: 'checkboxes', min: 1, table: true,
         choices: FAMILIES.map((value) => ({ value, label: FAMILY[value].label, detail: FAMILY[value].detail })),
       },
       {
@@ -259,6 +259,7 @@
       },
     ],
     sentences,
+    table: tableStep,
     sessions: [
       {
         label: 'Start',
