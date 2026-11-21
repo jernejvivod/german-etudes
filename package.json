@@ -6,7 +6,8 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "test:e2e": "node --test test/e2e/*.e2e.js"
   },
   "devDependencies": {
     "electron": "^45.2.1"
