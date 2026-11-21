@@ -86,11 +86,7 @@ test('the table scope: the options marked table, the rest left to the defaults',
   assert.deepEqual(S.scopeOf(byId.nominal, byId.nominal.defaults, 'table'), {});
   // The sentences scope as before.
   assert.deepEqual(Object.keys(S.scopeOf(determiners, determiners.defaults)), ['families', 'cases', 'hints']);
-
-  assert.ok(S.sameScope(determiners, { ...determiners.defaults, cases: ['nom'], hints: true }, determiners.defaults, 'table'));
-  assert.ok(!S.sameScope(determiners, { ...determiners.defaults, cases: ['nom'] }, determiners.defaults));
-  assert.ok(!S.sameScope(determiners, { families: ['ein'] }, determiners.defaults, 'table'));
-  assert.ok(S.sameScope(adjectives, { degrees: ['comp'], mode: 'full' }, adjectives.defaults, 'table'));
+  assert.deepEqual(S.scopeOf(determiners, { ...determiners.defaults, cases: ['nom'], hints: true }, 'table'), { families: ['der', 'ein'] });
 
   assert.equal(S.scopeText(determiners, { ...determiners.defaults, families: ['ein'] }, 'table'), 'ein-words');
   assert.equal(S.scopeText(determiners, determiners.defaults, 'table'), 'the whole table');
@@ -108,7 +104,8 @@ test('Präpositionen\'s table scope holds only the groups with a case of their o
   assert.equal(text(prepositions.defaults.groups), 'Akkusativ, Dativ, Wechselpräpositionen');
   assert.equal(text(['fixed']), 'the whole table');
   assert.equal(text(['akk', 'dat', 'wechsel', 'gen', 'fixed', 'da']), 'the whole table');
-  assert.ok(S.sameScope(prepositions, { groups: ['akk', 'fixed'] }, { ...prepositions.defaults, groups: ['akk'] }, 'table'));
+  // Its parts: the groups with a case.
+  assert.deepEqual(S.partGroups(prepositions, 'table').map((o) => S.scopeChoices(o, 'table')), [['akk', 'dat', 'wechsel', 'gen']]);
   // A stored scope builds the same table.
   const stored = S.fitSettings(prepositions, scopeOf(['akk', 'da']));
   assert.deepEqual(prepositions.table(stored, mulberry32(2)), prepositions.table({ ...prepositions.defaults, groups: ['akk', 'da'] }, mulberry32(2)));

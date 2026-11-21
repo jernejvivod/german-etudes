@@ -1,15 +1,16 @@
 'use strict';
 
-// The real app (harness.js): marking tables learnt, and Daily tables, which goes through them. Run with `npm run test:e2e`.
-// ETUDES_SHOTS=<dir> also saves screenshots of the home cards, the learnt switches, Daily tables' options and a table.
+// The real app (harness.js): tables marked learnt on Progress, and Daily tables, which goes through them. Run with
+// `npm run test:e2e`. ETUDES_SHOTS=<dir> also saves screenshots of the home cards, a topic's marks, Daily tables'
+// options and a table.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { withApp, skip } = require('./harness.js');
 const { dayOf } = require('../../src/core/daily.js');
 
 test('marking tables learnt and Daily tables', { timeout: 120000, skip }, () => withApp(async (app) => {
-  const { evaluate, screen, focused, click, text, key, shot, openTopic, choose, learnt, said } = app;
-  const notes = () => evaluate(`[...document.querySelectorAll('#options-learnt .learnt-note')].map((n) => n.textContent)`);
+  const { evaluate, screen, focused, click, text, key, shot, openTopic, choose, tickPart, tickTopic, learnt, said } = app;
+  const lines = () => evaluate(`[...document.querySelectorAll('#options-marks .marks-line')].map((l) => l.textContent)`);
   const card = (id) => text(`#daily [data-topic="${id}"] .topic-sub`);
   const shown = (id) => evaluate(`!document.getElementById(${JSON.stringify(id)}).hidden`);
 
@@ -21,30 +22,32 @@ test('marking tables learnt and Daily tables', { timeout: 120000, skip }, () => 
   assert.equal(await text('#options-title'), 'Daily tables');
   assert.match(await text('#options-error'), /^No table is marked learnt yet\. In Progress, tick Table for Adjektivendungen, .* or Nominalisierung\.$/);
   assert.equal(await evaluate(`document.querySelector('#options-actions button').disabled`), true);
-  assert.equal(await evaluate(`document.getElementById('options-learnt').hidden`), true, 'no switch on Daily tables itself');
+  assert.equal(await evaluate(`document.getElementById('options-marks').hidden`), true, 'no marks on Daily tables itself');
   await key('Escape');
   assert.equal(await screen(), 'home');
 
-  // Passiv's auxiliary table, as it is.
-  await openTopic('passive');
-  assert.deepEqual(await evaluate(`[...document.querySelectorAll('#options-learnt input')].map((i) => i.name)`), ['learnt-sentences', 'learnt-table']);
-  await click('#options-learnt input[name="learnt-table"]');
-  assert.deepEqual(await learnt(), { passive: { table: { parts: { kinds: ['werden'], tenses: ['praes', 'praet', 'perf'] }, since: (await learnt()).passive.table.since } } });
-  await shot('tables-2-switches');
+  // In Progress: all of Passiv's auxiliary table; Artikelwörter's ein-words table, whose cases are not part of it.
+  await click('#btn-progress');
+  await tickTopic('passive', 'table');
+  assert.deepEqual(await learnt(), { passive: { table: {
+    parts: { kinds: ['werden', 'sein', 'bekommen', 'ersatz'], tenses: ['praes', 'praet', 'perf', 'plusq', 'fut'] }, since: (await learnt()).passive.table.since,
+  } } });
+  await click('#progress [aria-controls="progress-parts-determiners"]');
+  await tickPart('determiners', 'table', 'families', 'ein');
+  assert.deepEqual((await learnt()).determiners.table.parts, { families: ['ein'] });
+  assert.equal(await evaluate(`document.getElementById('progress-determiners-table-cases-dat')`), null);
   await key('Escape');
 
-  // Artikelwörter's ein-words table only; the cases are not part of it.
+  // The options screen says what is learnt. No case ticked for a round does not keep the table out.
   await openTopic('determiners');
-  await choose('der-words');
-  await click('#options-learnt input[name="learnt-table"]');
-  assert.deepEqual((await learnt()).determiners.table.parts, { families: ['ein'] });
-  await choose('Dativ');
-  assert.deepEqual(await notes(), [], 'the cases are not part of the table');
-  await choose('Dativ');
-  await choose('der-words');
-  assert.deepEqual(await notes(), ['Daily tables use: ein-words.Use these settings']);
-  await choose('der-words');
-  assert.deepEqual(await notes(), []);
+  assert.deepEqual(await lines(), ['Not learnt for sentences yet', 'Learnt for the table: ein-words']);
+  for (const c of ['Nominativ', 'Akkusativ', 'Dativ', 'Genitiv']) await choose(c);
+  assert.equal(await text('#options-error'), 'Pick at least one: cases.');
+  assert.deepEqual(await lines(), ['Not learnt for sentences yet', 'Learnt for the table: ein-words']);
+  await shot('tables-2-marks');
+  await key('Escape');
+  await openTopic('passive');
+  assert.deepEqual(await lines(), ['Not learnt for sentences yet', 'Learnt for the table: the whole table']);
   await key('Escape');
 
   assert.equal(await card('daily-tables'), '2 learnt tables · not done yet today');
@@ -56,6 +59,8 @@ test('marking tables learnt and Daily tables', { timeout: 120000, skip }, () => 
   await openTopic('daily-tables');
   assert.deepEqual(await evaluate(`[...document.querySelectorAll('#options-listing li b')].map((b) => b.textContent)`),
     ['Artikelwörter — Endings table', 'Passiv — Auxiliary verbs']);
+  assert.deepEqual(await evaluate(`[...document.querySelectorAll('#options-listing li span')].map((s) => s.textContent.split(' · learnt')[0])`),
+    ['ein-words', 'the whole table']);
   await shot('tables-3-options');
   await key('Enter');
   assert.equal(await screen(), 'table');

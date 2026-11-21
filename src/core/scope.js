@@ -45,12 +45,6 @@
     return Object.fromEntries(topic.options.filter((opt) => inScope(opt, kind)).map((opt) => [opt.key, scoped(opt, settings[opt.key], kind)]));
   }
 
-  // Whether two settings have the same scope (a stored one is fitted first, as the daily exercise would use it).
-  function sameScope(topic, a, b, kind = 'sentences') {
-    const key = (s) => JSON.stringify(scopeOf(topic, fitSettings(topic, s), kind));
-    return key(a) === key(b);
-  }
-
   // The tick-box options whose choices are a kind of mark's parts, in the options' order: those in its scope that hold a
   // choice (Passiv: both; Artikelwörter's table: Determiners only; Funktionsverbgefüge: none).
   const partGroups = (topic, kind = 'sentences') => topic.options
@@ -82,5 +76,5 @@
     return words.join(' · ');
   }
 
-  return { choiceValues, fitSettings, settingsProblem, inScope, scopeChoices, scopeOf, sameScope, partGroups, partsText, scopeText };
+  return { choiceValues, fitSettings, settingsProblem, inScope, scopeChoices, scopeOf, partGroups, partsText, scopeText };
 });
