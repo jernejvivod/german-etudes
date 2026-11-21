@@ -32,3 +32,8 @@ for (const screen of ['drill', 'table']) {
     assert.deepEqual(escapeAction(screen, false, 'home'), { arm: 'options' });
   });
 }
+
+test('progress: both keys go to the topic list at once', () => {
+  assert.deepEqual(escapeAction('progress', false, null), { go: 'home' });
+  assert.deepEqual(escapeAction('progress', true, null), { go: 'home' });
+});
