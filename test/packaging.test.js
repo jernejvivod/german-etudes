@@ -4,6 +4,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { ignore, packagerOptions, BUNDLE_ID } = require('../tools/package-app.js');
 
@@ -67,4 +68,27 @@ test('build/icon.icns is an icns file with the 1024 px rendition (ic10)', () => 
     chunks.push(icns.toString('latin1', at, at + 4));
   }
   assert.ok(chunks.includes('ic10'), `chunks: ${chunks.join(' ')}`);
+});
+
+test('install-app replaces only an earlier German Etudes', (t) => {
+  const { checkTarget } = require('../tools/install-app.js');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'etudes-install-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const app = (name, plist = true) => {
+    const dest = path.join(dir, name);
+    fs.mkdirSync(path.join(dest, 'Contents'), { recursive: true });
+    if (plist) fs.writeFileSync(path.join(dest, 'Contents', 'Info.plist'), '');
+    return dest;
+  };
+  const ours = () => BUNDLE_ID;
+  assert.equal(checkTarget(path.join(dir, 'none.app'), ours), 'fresh');
+  assert.equal(checkTarget(app('ours.app'), ours), 'replace');
+  assert.throws(() => checkTarget(app('other.app'), () => 'com.example.other'), /another app \(com\.example\.other\)/);
+  assert.throws(() => checkTarget(app('bare.app', false), ours), /no Info\.plist/);
+  const file = path.join(dir, 'file.app');
+  fs.writeFileSync(file, '');
+  assert.throws(() => checkTarget(file, ours), /is not an app/);
+  const link = path.join(dir, 'link.app');
+  fs.symlinkSync(app('target.app'), link);
+  assert.throws(() => checkTarget(link, ours), /is a symlink/);
 });
