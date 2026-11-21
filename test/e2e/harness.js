@@ -2,7 +2,8 @@
 
 // Runs the real app for an end-to-end test, driven over the Chrome DevTools Protocol. The app runs on a temp profile
 // (--user-data-dir), never the real one, and reads aloud with the stand-in for `say` (test/fixtures/fakesay.sh), so
-// nothing is spoken. ETUDES_SHOTS=<dir> also saves the screenshots a test takes (shot).
+// nothing is spoken. ETUDES_SHOTS=<dir> also saves the screenshots a test takes (shot). ETUDES_APP=<binary> runs a
+// packaged app (…/German Etudes.app/Contents/MacOS/German Etudes) instead of the source.
 const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
@@ -20,7 +21,9 @@ const skip = process.platform !== 'darwin' && 'macOS only';
 function launch(dir, saidPath) {
   const env = { ...process.env, ETUDES_SAY: path.join(ROOT, 'test', 'fixtures', 'fakesay.sh'), SAID: saidPath, HOLD: '1' };
   delete env.ELECTRON_RUN_AS_NODE;
-  const child = spawn(electron, ['.', '--remote-debugging-port=0', `--user-data-dir=${path.join(dir, 'ud')}`], {
+  const app = process.env.ETUDES_APP && path.resolve(process.env.ETUDES_APP);
+  const args = ['--remote-debugging-port=0', `--user-data-dir=${path.join(dir, 'ud')}`];
+  const child = spawn(app || electron, app ? args : ['.', ...args], {
     cwd: ROOT,
     env,
     stdio: ['ignore', 'ignore', 'pipe'],
