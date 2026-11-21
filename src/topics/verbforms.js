@@ -340,7 +340,8 @@
     const tenseOf = (i) => ENTRY_TENSE[i.tense] || i.tense;
     const items = [];
     for (const v of round) {
-      // With the Anki option a deck verb's entry carries its card, so practising it here marks it as shown.
+      // With the Anki option a deck verb's entry carries its card, so answering it right here marks it as shown (a miss
+      // releases it).
       const fromCard = source === 'anki' && deck().entries.find((e) => e.verb.inf === v.inf && !!e.verb.reflexive === !!v.reflexive);
       const entry = fromCard || entryFor(v);
       const mine = [];

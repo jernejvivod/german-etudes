@@ -266,9 +266,10 @@
     return notes.filter((n) => itemsOf(n).length);
   }
 
-  // A round: cards drawn by weight (vocab.sample) — the ones due now and hard most often, those practised here lately
-  // least — with one of their sentences each. No fixed order, so the hardest cards do not fill every round. The window
-  // is what counts as soon: a card due at its far end weighs a tenth of one due today.
+  // A round: cards drawn by weight (vocab.sample) — the ones due now and hard most often, those you just got right here
+  // least (ones you got wrong can come back next round) — with one of their sentences each. No fixed order, so the
+  // hardest cards do not fill every round. The window is what counts as soon: a card due at its far end weighs a tenth
+  // of one due today.
   function buildRound(settings, rnd = Math.random) {
     const notes = vocab.sample(usable(dueNotes(settings.window)), settings.length, rnd, { soon: settings.window });
     return shuffle(notes.map((note) => pick(itemsOf(note), rnd)), rnd);
@@ -296,7 +297,7 @@
     intro(settings) {
       if (!deck) return 'Reads your Langenscheidt deck from Anki.';
       const { due, usable } = stats(settings);
-      return `${due} cards due within ${settings.window} days; ${usable} have an example sentence with endings to fill in. Each round draws other cards: those due now and hard ones (lapses, low ease) most often, those you have just practised here least.`;
+      return `${due} cards due within ${settings.window} days; ${usable} have an example sentence with endings to fill in. Each round draws other cards: those due now and hard ones (lapses, low ease) most often, those you just got right here least; ones you got wrong can come back next round.`;
     },
     defaults: { window: 7, length: 10, hints: false },
     options: [
