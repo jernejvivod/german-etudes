@@ -669,6 +669,9 @@
     };
   }
 
+  // n sentences in the settings' scope, for a round here and for the Daily review.
+  const sentences = (settings, n, rnd = Math.random) => drillStep({ ...settings, length: n }, rnd);
+
   return {
     id: 'prepositions',
     title: 'Präpositionen',
@@ -689,17 +692,20 @@
       { key: 'adjectives', label: 'Adjectives', type: 'toggle', text: 'Add an adjective to the noun phrase' },
       { key: 'hints', label: 'Hints', type: 'toggle', text: 'Show the case before answering' },
       {
-        key: 'length', label: 'Round', type: 'radio', inline: true, choices: [
+        key: 'length', label: 'Round', type: 'radio', inline: true, round: true, choices: [
           { value: 10, label: '10 sentences' },
           { value: 20, label: '20 sentences' },
         ],
       },
     ],
+    sentences,
     sessions: [
       {
         label: 'Start',
         build(settings, rnd = Math.random) {
-          return [tableStep(settings, rnd), drillStep(settings, rnd)];
+          // The sentences first, so the case table's draws leave them as sentences() alone makes them.
+          const drill = sentences(settings, settings.length, rnd);
+          return [tableStep(settings, rnd), drill];
         },
       },
       { label: 'Case table only', build: (settings) => [tableStep(settings)] },

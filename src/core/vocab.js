@@ -605,7 +605,7 @@
 
   // What a topic drawing nouns from the deck shares: the option, the default, loading, and a line in the intro.
   const OPTION = {
-    key: 'vocab', label: 'Nouns', type: 'radio', choices: [
+    key: 'vocab', label: 'Nouns', type: 'radio', daily: 'anki', choices: [
       { value: 'anki', label: 'My Anki words', detail: 'learnt nouns from your Langenscheidt deck, those due soon and hard most often; built-in ones where few fit' },
       { value: 'builtin', label: 'Built-in' },
     ],

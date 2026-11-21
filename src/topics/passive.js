@@ -357,6 +357,9 @@
     };
   }
 
+  // n sentences in the settings' scope, for a round here and for the Daily review.
+  const sentences = (settings, n, rnd = Math.random) => drillStep({ ...settings, length: n }, rnd);
+
   return {
     id: 'passive',
     title: 'Passiv',
@@ -373,18 +376,19 @@
         choices: TENSES.map((value) => ({ value, label: TENSE_LABELS[value] })),
       },
       {
-        key: 'length', label: 'Round', type: 'radio', inline: true, choices: [
+        key: 'length', label: 'Round', type: 'radio', inline: true, round: true, choices: [
           { value: 10, label: '10 sentences' },
           { value: 20, label: '20 sentences' },
         ],
       },
     ],
     validate,
+    sentences,
     sessions: [
       {
         label: 'Start',
         build(settings, rnd = Math.random) {
-          return [tableStep(settings), drillStep(settings, rnd)];
+          return [tableStep(settings), sentences(settings, settings.length, rnd)];
         },
       },
       { label: 'Auxiliary tables only', build: (settings) => [tableStep(settings)] },

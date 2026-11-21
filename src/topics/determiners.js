@@ -230,6 +230,9 @@
     return { type: 'table', label: 'Endings table', table: endingsTable(settings) };
   }
 
+  // n sentences in the settings' scope, for a round here and for the Daily review.
+  const sentences = (settings, n, rnd = Math.random) => drillStep({ ...settings, length: n }, rnd);
+
   return {
     id: 'determiners',
     title: 'Artikelwörter',
@@ -249,17 +252,18 @@
       vocab.OPTION,
       { key: 'hints', label: 'Hints', type: 'toggle', text: 'Show case & gender before answering' },
       {
-        key: 'length', label: 'Round', type: 'radio', inline: true, choices: [
+        key: 'length', label: 'Round', type: 'radio', inline: true, round: true, choices: [
           { value: 10, label: '10 sentences' },
           { value: 20, label: '20 sentences' },
         ],
       },
     ],
+    sentences,
     sessions: [
       {
         label: 'Start',
         build(settings, rnd = Math.random) {
-          return [drillStep(settings, rnd), tableStep(settings)];
+          return [sentences(settings, settings.length, rnd), tableStep(settings)];
         },
       },
       { label: 'Endings table only', build: (settings) => [tableStep(settings)] },
