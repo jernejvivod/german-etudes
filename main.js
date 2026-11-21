@@ -35,10 +35,26 @@ ipcMain.handle('speech:speak', async (_, text) => {
 });
 ipcMain.handle('speech:stop', () => speech.stop());
 
-app.whenReady().then(() => {
-  speech.germanVoice(); // listing the voices takes a moment: look the German one up before the first sentence
-  createWindow();
-});
+// One copy per profile: npm start and the installed app share one, and two copies would overwrite each other's marks.
+// A second start brings the first one's window to the front instead. Each throwaway profile (start:clean, the
+// end-to-end tests) has a lock of its own.
+if (!app.requestSingleInstanceLock()) {
+  console.error('German Etudes is already running on this profile — use npm run start:clean for a second copy.');
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    const [win] = BrowserWindow.getAllWindows();
+    if (!win) return;
+    if (win.isMinimized()) win.restore();
+    win.show();
+    win.focus();
+    app.focus({ steal: true }); // macOS: bring the app itself to the front, not only its window
+  });
+  app.whenReady().then(() => {
+    speech.germanVoice(); // listing the voices takes a moment: look the German one up before the first sentence
+    createWindow();
+  });
+}
 
 app.on('window-all-closed', () => app.quit());
 // Cmd+Q skips window-all-closed: stop a sentence being read on every way out, or `say` reads on after the app.

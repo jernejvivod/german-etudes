@@ -158,3 +158,6 @@ vite.config.ts.timestamp-*
 
 # macOS
 .DS_Store
+
+# Packaged app (npm run package)
+/out/
