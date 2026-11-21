@@ -1,9 +1,17 @@
 // App shell: topic picker, topic options, and the generic drill / summary / table steps.
 //
-// A topic is { id, title, subtitle, intro, defaults, options, validate?, prepare?, sessions: [{ label, build(settings) → steps }] }
+// A topic is { id, title, subtitle, intro, defaults, options, validate?, prepare?, sentences?, listing?,
+//   sessions: [{ label, build(settings, rnd?) → steps }] }
 //   intro: text, or settings → text; prepare: async, loads the topic's data when it is opened and resolves to an error or null
-//   options: [{ key, label, type: 'radio' | 'checkboxes' | 'toggle', choices?, text?, min?, inline? }]
-// A step is { type: 'drill', label, items, hint?, hideTags? } or { type: 'table', label, table }.
+//   options: [{ key, label, type: 'radio' | 'checkboxes' | 'toggle', choices?, text?, min?, inline?, round? }]
+//     round: shapes only the topic's own round (its length …), so it is not part of what is marked learnt (scope.js)
+//   sentences(settings, n, rnd): a drill step of n sentences in the settings' scope; a topic that has it can be marked
+//     Sentences learnt and comes up in the Daily review (daily.js)
+//   listing(settings): [{ title, text }] rows shown under the intro (the Daily review's learnt topics)
+// A step is { type: 'drill', label, items, hint?, hideTags?, onChecked?, onDone? } or { type: 'table', label, table }.
+//   onChecked(item, ok) runs after each item is checked, onDone() when the drill reaches its summary.
+// A drill item may bring its own hint, hideTags and source (the topic it comes from, shown above it): the Daily review
+// mixes topics in one drill.
 // A drill item may name the Anki notes it uses (notes): once it is checked right they count as shown (vocab.markShown),
 // so the next rounds bring other cards; checked wrong, they are not held back (vocab.markMissed).
 // A table cell's answer is a string or a list of accepted strings (the first is shown as the correction); a block with
@@ -11,8 +19,16 @@
 (function () {
   'use strict';
 
-  const { cloze, nav, topics, vocab, store } = window.Etudes;
+  const { cloze, nav, topics, vocab, store, scope, daily } = window.Etudes;
   const $ = (id) => document.getElementById(id);
+
+  // The daily exercises, shown above the topics.
+  const dailies = [daily.reviewTopic(topics)];
+
+  // What a topic can be marked learnt for, in the daily exercises.
+  const LEARNT = [
+    { kind: 'sentences', label: 'Sentences learnt', detail: 'comes up in the Daily review with these settings', has: (t) => !!t.sentences },
+  ];
 
   let screen = 'home';
   let topic = null;
@@ -20,7 +36,7 @@
   let session = null; // { steps, index }
   let preparing = null; // the topic whose data is still loading, if any
   let prepareError = null;
-  let drill = null; // { items, index, results: [{ item, grades }] }
+  let drill = null; // { step, items, hint, hideTags, index, results: [{ item, grades }] }
   let cells = []; // table inputs, block by block, each block column-major
   let cellInfo = new Map(); // input → { idx, b, c, r, gap }
   let blocks = []; // per block { start, rows, cols }
@@ -32,18 +48,8 @@
     return `etudes-settings-${t.id}`;
   }
 
-  // Saved settings over the defaults, dropping values the topic's options no longer offer.
   function loadSettings(t) {
-    const saved = store.read(settingsKey(t), {});
-    const result = { ...t.defaults };
-    for (const opt of t.options) {
-      const value = saved[opt.key];
-      const valid = choiceValues(opt);
-      if (opt.type === 'radio' && valid.includes(value)) result[opt.key] = value;
-      if (opt.type === 'checkboxes' && Array.isArray(value)) result[opt.key] = valid.filter((v) => value.includes(v));
-      if (opt.type === 'toggle' && typeof value === 'boolean') result[opt.key] = value;
-    }
-    return result;
+    return scope.fitSettings(t, store.read(settingsKey(t), {}));
   }
 
   function saveSettings() {
@@ -152,11 +158,27 @@
     }
   }
 
+  // The daily exercises' cards: done today, or how many topics are marked learnt. Rebuilt on every return home, as
+  // the marks and the day change.
+  function renderDaily() {
+    $('daily').replaceChildren(...dailies.map((t) => {
+      const done = daily.doneToday(t.kind);
+      const count = t.learnt().length;
+      const card = el('button', done ? 'topic daily done' : 'topic daily');
+      card.dataset.topic = t.id;
+      const sub = done ? 'Done today ✓' : count ? `${count} learnt topic${count === 1 ? '' : 's'} · not done yet today` : 'No topic marked learnt yet';
+      card.append(el('span', 'topic-title', t.title), el('span', 'topic-sub', sub));
+      card.addEventListener('click', () => openTopic(t, true));
+      return card;
+    }));
+  }
+
   // Back on the list, the focus is on the topic just left (Enter reopens it), or on the first.
   function goHome() {
     preparing = null; // a load finishing later must not focus the hidden options screen
+    renderDaily();
     show('home');
-    const cards = [...$('topics').children];
+    const cards = [...document.querySelectorAll('#home .topic')];
     (cards.find((card) => card.dataset.topic === topic?.id) || cards[0])?.focus();
   }
 
@@ -168,6 +190,7 @@
     settings = loadSettings(t);
     $('options-title').textContent = t.title;
     renderOptions();
+    renderLearnt();
     renderSessionButtons();
     show('options');
     if (fresh) {
@@ -178,6 +201,7 @@
       const load = t;
       preparing = load;
       $('options-intro').textContent = 'Loading…';
+      $('options-listing').hidden = true;
       validateOptions();
       let error;
       try {
@@ -196,6 +220,40 @@
 
   function renderIntro() {
     $('options-intro').textContent = typeof topic.intro === 'function' ? topic.intro(settings) : topic.intro;
+    const rows = topic.listing?.(settings) || [];
+    $('options-listing').replaceChildren(...rows.map(({ title, text }) => {
+      const li = el('li');
+      li.append(el('b', null, title), ' ', el('span', 'muted', text));
+      return li;
+    }));
+    $('options-listing').hidden = !rows.length;
+  }
+
+  // The Sentences learnt switch (topics with sentences): on, it saves the settings' scope for the Daily review. The
+  // scope changes only on purpose: while it differs from the settings, a note says which one is used.
+  function renderLearnt() {
+    const box = $('options-learnt');
+    const kinds = LEARNT.filter((l) => l.has(topic));
+    box.hidden = !kinds.length;
+    box.replaceChildren(el('legend', null, 'Daily review'));
+    for (const { kind, label, detail } of kinds) {
+      const mark = daily.markOf(topic.id, kind);
+      const name = `learnt-${kind}`;
+      const setMark = (on) => {
+        daily.setMark(topic.id, kind, on ? scope.scopeOf(topic, settings) : null);
+        renderLearnt();
+        box.querySelector(`input[name="${name}"]`).focus(); // the re-render dropped the focused control
+      };
+      box.append(choiceLabel('checkbox', name, { label, detail }, !!mark, (e) => setMark(e.target.checked)));
+      if (mark && !scope.sameScope(topic, mark.settings, settings)) {
+        const note = el('p', 'learnt-note', `The Daily review uses: ${scope.scopeText(topic, scope.fitSettings(topic, mark.settings))}.`);
+        const use = el('button', null, 'Use these settings');
+        use.type = 'button';
+        use.addEventListener('click', () => setMark(true));
+        note.append(use);
+        box.append(note);
+      }
+    }
   }
 
   function choiceLabel(type, name, choice, checked, onChange) {
@@ -254,19 +312,18 @@
     settings[key] = value;
     saveSettings();
     if (!preparing) renderIntro();
+    renderLearnt();
     validateOptions();
   }
 
-  // Shows the first problem with the settings (or the topic's data) and disables the start buttons while there is one.
+  // Shows the first problem with the settings (or the topic's data) and disables the start buttons, and marking them
+  // learnt, while there is one.
   function validateOptions() {
-    const tooFew = topic.options.find((opt) => opt.min && settings[opt.key].length < opt.min);
-    let error = null;
-    if (!preparing) {
-      error = prepareError || (tooFew && `Pick at least one: ${tooFew.label.toLowerCase()}.`) || topic.validate?.(settings) || null;
-    }
+    const error = preparing ? null : prepareError || scope.settingsProblem(topic, settings);
     $('options-error').textContent = error || '';
     $('options-error').hidden = !error;
     for (const button of $('options-actions').querySelectorAll('button')) button.disabled = !!error || preparing;
+    $('options-learnt').disabled = !!error || !!preparing;
     return !error && !preparing;
   }
 
@@ -294,8 +351,7 @@
   // ---------- Drill ----------
 
   function startDrill(step) {
-    drill = { items: step.items, hideTags: !!step.hideTags, index: 0, results: [] };
-    $('drill-hint').textContent = step.hint || '';
+    drill = { step, items: step.items, hint: step.hint || '', hideTags: !!step.hideTags, index: 0, results: [] };
     show('drill');
     renderItem();
   }
@@ -314,7 +370,10 @@
 
     $('progress-text').textContent = `${drill.index + 1} / ${drill.items.length}`;
     updateProgress();
-    $('tags').replaceChildren(drill.hideTags ? '' : tagsFragment(item));
+    $('source').textContent = item.source || '';
+    $('source').hidden = !item.source;
+    $('tags').replaceChildren((item.hideTags ?? drill.hideTags) ? '' : tagsFragment(item));
+    $('drill-hint').textContent = item.hint ?? drill.hint;
 
     const prompt = $('prompt');
     prompt.hidden = !item.prompt;
@@ -356,9 +415,10 @@
     drill.results.push({ item, grades });
     if (allOk) vocab.markShown(item.notes);
     else vocab.markMissed(item.notes);
+    drill.step.onChecked?.(item, allOk);
     updateProgress();
 
-    if (drill.hideTags) $('tags').replaceChildren(tagsFragment(item));
+    if (item.hideTags ?? drill.hideTags) $('tags').replaceChildren(tagsFragment(item));
 
     const answer = el('p', 'answer');
     answer.append(answerFragment(item));
@@ -391,6 +451,7 @@
   // ---------- Summary ----------
 
   function showSummary() {
+    drill.step.onDone?.();
     const mistakes = drill.results.filter((r) => r.grades.some((g) => !g.ok));
     $('summary-score').textContent = `${drill.results.length - mistakes.length} / ${drill.results.length} sentences correct`;
 
@@ -401,7 +462,7 @@
       sent.append(answerFragment(item));
       const wrong = grades.filter((g) => !g.ok).map((g) => cloze.typed(g.gap, g.value));
       const meta = el('div', 'meta');
-      meta.append(`${item.tags.map((t) => t.text).join(' · ')} — you wrote `, el('span', 'given', wrong.join(', ')));
+      meta.append(`${[item.source, ...item.tags.map((t) => t.text)].filter(Boolean).join(' · ')} — you wrote `, el('span', 'given', wrong.join(', ')));
       const li = el('li');
       li.append(sent, meta);
       list.append(li);

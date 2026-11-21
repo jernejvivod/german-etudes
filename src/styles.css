@@ -105,6 +105,7 @@ h2 { font-size: 24px; margin: 0 0 8px; letter-spacing: -0.01em; }
 .lead { color: var(--muted); margin: 0 0 24px; max-width: 640px; }
 .muted { color: var(--muted); }
 .hint { color: var(--muted); font-size: 13px; text-align: center; margin-top: 16px; }
+#drill-hint { min-height: 3em; } /* two lines kept free: the Daily review's hints change from item to item */
 
 kbd {
   font: 12px ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -126,6 +127,11 @@ kbd {
 }
 .topic-title { font-size: 20px; }
 .topic-sub { font-weight: 400; color: var(--muted); }
+/* The daily exercises, above the topics. */
+#daily { margin-bottom: 16px; }
+#daily:empty { display: none; }
+.topic.daily { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); }
+.topic.daily.done .topic-sub { color: var(--ok); font-weight: 600; }
 .setting { display: flex; gap: 8px; align-items: center; margin-top: 24px; color: var(--muted); cursor: pointer; }
 .setting input { accent-color: var(--accent); }
 .setting[hidden] { display: none; }
@@ -144,6 +150,14 @@ legend { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; col
 .radio { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; cursor: pointer; }
 .radio input { accent-color: var(--accent); }
 fieldset.inline .radio { display: inline-flex; margin-right: 22px; }
+fieldset[hidden] { display: none; }
+
+/* The Daily review's learnt topics, and the Sentences learnt switch with its note. */
+.listing { list-style: none; padding: 0; margin: -8px 0 24px; display: grid; gap: 6px; max-width: 640px; }
+.listing li { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; }
+.learnt { margin-bottom: 24px; }
+.learnt-note { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 6px 0 4px 30px; color: var(--muted); font-size: 14px; }
+.learnt-note button { padding: 4px 12px; font-size: 14px; }
 
 /* Buttons */
 .actions { display: flex; gap: 12px; justify-content: center; margin-top: 24px; flex-wrap: wrap; }
@@ -191,6 +205,8 @@ button.ghost { border: none; background: none; padding: 6px 10px; color: var(--m
   border: 1px solid currentColor;
 }
 .tag.plain { color: var(--text); }
+/* The topic a Daily review sentence comes from. */
+.source { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: -12px 0 10px; }
 
 .prompt { font-size: 19px; color: var(--muted); margin: 0 0 6px; }
 .prompt-label {
