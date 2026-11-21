@@ -53,3 +53,23 @@ test('scopeText: the chosen labels, "all …" for a full option, "all" for every
   const prepositions = require('../src/topics/prepositions.js');
   assert.equal(S.scopeText(prepositions, { ...prepositions.defaults, hints: true }), 'Akkusativ, Dativ, Wechselpräpositionen, Verbs with fixed prepositions · with adjectives · with hints');
 });
+
+test('inScope: round and daily options are not in the sentences\' scope; only table options are in the table\'s', () => {
+  const [parts, , , length] = topic.options;
+  assert.ok(S.inScope(parts, 'sentences'));
+  assert.ok(!S.inScope(parts, 'table'));
+  assert.ok(!S.inScope(length, 'sentences'));
+  assert.ok(!S.inScope({ ...length, table: true }, 'sentences'));
+  assert.ok(!S.inScope({ key: 'vocab', daily: 'anki' }, 'sentences'));
+  assert.ok(!S.inScope({ key: 'vocab', daily: 'anki' }, 'table'));
+  assert.ok(S.inScope(passive.options.find((o) => o.key === 'tenses'), 'table'));
+  assert.ok(S.inScope(passive.options.find((o) => o.key === 'tenses'), 'sentences'));
+});
+
+test('scopeChoices: the choices a kind of mark can hold (Präpositionen\'s case table: the groups with a case)', () => {
+  const prepositions = require('../src/topics/prepositions.js');
+  const groups = prepositions.options.find((o) => o.key === 'groups');
+  assert.deepEqual(S.scopeChoices(groups, 'sentences'), ['akk', 'dat', 'wechsel', 'gen', 'fixed', 'da']);
+  assert.deepEqual(S.scopeChoices(groups, 'table'), ['akk', 'dat', 'wechsel', 'gen']);
+  assert.deepEqual(S.scopeChoices(passive.options.find((o) => o.key === 'kinds'), 'table'), ['werden', 'sein', 'bekommen', 'ersatz']);
+});
