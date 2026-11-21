@@ -83,6 +83,12 @@ test('the Progress checklist', { timeout: 120000, skip }, () => withApp(async (a
   await click('#progress .to-topics');
   assert.equal(await screen(), 'home');
 
+  // A mark that no longer fits is named when the topic has two (Zustandspassiv only in the Perfekt fails Passiv's rule).
+  await evaluate(`Etudes.daily.setMark('passive', 'table', { kinds: ['sein'], tenses: ['perf'] })`);
+  await click('#btn-progress');
+  assert.match(await text('#progress [data-topic="passive"] .check-warn'), /^Table: its learnt settings no longer fit/);
+  await click('#progress .to-topics');
+
   assert.deepEqual(said(), [], 'nothing read aloud');
   assert.ok(app.ranOnTempProfile(), 'the app ran on the temp profile');
 }));

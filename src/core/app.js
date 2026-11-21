@@ -207,7 +207,10 @@
     const line = el('button', 'check-line');
     line.dataset.topic = item.id;
     line.append(el('span', 'check-title', item.title), ...LEARNT.filter((l) => l.kind in item.marks).map((l) => progressMark(l, item.marks[l.kind])));
-    if (Object.values(item.marks).some((mark) => mark && !mark.fits)) line.append(el('span', 'check-warn', daily.UNFIT));
+    // Which mark no longer fits, where the topic has two.
+    const unfit = LEARNT.filter((l) => item.marks[l.kind] && !item.marks[l.kind].fits).map((l) => l.name);
+    const which = Object.keys(item.marks).length > 1 ? `${unfit.join(' and ')}: ` : '';
+    if (unfit.length) line.append(el('span', 'check-warn', which + daily.UNFIT));
     line.addEventListener('click', () => openTopic(topics.find((t) => t.id === item.id), true));
     const row = el('div', 'check-row');
     const li = el('li');
