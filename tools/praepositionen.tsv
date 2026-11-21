@@ -1,0 +1,289 @@
+# Verbs, adjectives and nouns with a fixed preposition, for tools/praep-deck.js.
+# Columns: kind (Verb / Adjektiv / Nomen), pair, case (Akk / Dat), English, example, source.
+# Source: quillbot = the list at https://quillbot.com/de/blog/verben/verben-mit-praepositionen/ (190 verbs, read on
+# 2026-11-07; corrected where marked "quillbot*": zählen zu takes the Dativ, ekeln / entwickeln / abmelden / trennen / richten /
+# verhalten are reflexive there); added = added here (the common pairs it lacks, adjectives and nouns).
+Verb	abhängen von	Dat	to depend on	Ob die Gartenparty stattfindet, hängt vom Wetter ab.	quillbot
+Verb	abhalten von	Dat	to keep (someone) from	Jana ließ sich von ihrem Plan nicht abhalten.	quillbot
+Verb	ablenken von	Dat	to distract from	Die sozialen Medien lenken ihn von der Arbeit ab.	quillbot
+Verb	sich abmelden von	Dat	to unsubscribe from, to sign off from	Sie meldet sich vom Newsletter ab.	quillbot*
+Verb	anfangen mit	Dat	to start (doing)	Hast du schon mit deinem Essay angefangen?	quillbot
+Verb	ankommen auf	Akk	to depend on (es kommt auf … an)	Jetzt kommt es auf dich an.	quillbot
+Verb	achten auf	Akk	to pay attention to	Die Lektorin achtet auf Groß- und Kleinschreibung.	quillbot
+Verb	anregen zu	Dat	to prompt, to encourage (to)	Der Artikel regt zum Nachdenken an.	quillbot
+Verb	anspornen zu	Dat	to spur on to	Der Coach spornt das Team zu Höchstleistungen an.	quillbot
+Verb	antworten auf	Akk	to answer, to reply to	Hast du schon auf die E-Mail geantwortet?	quillbot
+Verb	arbeiten an	Dat	to work on	Sie arbeitet an ihrer Hausarbeit.	quillbot
+Verb	aufhören mit	Dat	to stop (doing)	Er hat mit dem Rauchen aufgehört.	quillbot
+Verb	aufpassen auf	Akk	to look after, to watch	Kannst du morgen auf meinen Hund aufpassen?	quillbot
+Verb	sich aufregen über	Akk	to get worked up about	Der Trainer regt sich über das Ergebnis auf.	quillbot
+Verb	ausgeben für	Akk	to spend (money) on	Sie hat viel Geld für einen SUV ausgegeben.	quillbot
+Verb	ausschließen von	Dat	to exclude from	Der Verband schloss das Team vom Turnier aus.	quillbot
+Verb	aussehen nach	Dat	to look like (es sieht nach … aus)	Es sieht nach Regen aus.	quillbot
+Verb	bauen auf	Akk	to rely on, to count on	Die Mannschaft baut auf dich.	quillbot
+Verb	basieren auf	Dat	to be based on	Der Roman basiert auf einer wahren Geschichte.	quillbot
+Verb	sich bedanken bei	Dat	to thank (someone)	Die Preisträgerin bedankte sich bei ihren Eltern.	quillbot
+Verb	sich bedanken für	Akk	to say thank you for	Sie bedankte sich für die Unterstützung.	quillbot
+Verb	beginnen mit	Dat	to begin (with)	Tom beginnt nächstes Jahr mit dem Studium.	quillbot
+Verb	sich begnügen mit	Dat	to make do with	Pia begnügt sich mit einer kleinen Wohnung.	quillbot
+Verb	belegen mit	Dat	to top, to cover with	Er belegt die Pizza mit Peperoni und Paprika.	quillbot
+Verb	sich bemühen um	Akk	to try to get, to make an effort for	Emma bemüht sich um einen neuen Job.	quillbot
+Verb	beneiden um	Akk	to envy (someone) for	Sie beneidet ihren Bruder um seine Gelassenheit.	quillbot
+Verb	berichten über	Akk	to report on	Der Reporter berichtet über das Finale.	quillbot
+Verb	berichten von	Dat	to tell about, to report of	Lea berichtet von ihrem Semester in Griechenland.	quillbot
+Verb	beruhen auf	Dat	to be based on	Ein Faktenargument beruht auf Tatsachen.	quillbot
+Verb	sich beschäftigen mit	Dat	to deal with, to occupy oneself with	Max beschäftigt sich mit Archäologie.	quillbot
+Verb	sich beschweren bei	Dat	to complain to (someone)	Sie beschwert sich bei ihrer Chefin.	quillbot
+Verb	sich beschweren über	Akk	to complain about	Sie beschwert sich über die veraltete Ausrüstung.	quillbot
+Verb	besetzen mit	Dat	to fill (a post) with	Der CEO besetzte die Stelle mit einer Expertin.	quillbot
+Verb	bestehen auf	Dat	to insist on	Mark bestand auf seiner Meinung.	quillbot
+Verb	bestehen aus	Dat	to consist of	Butter besteht vor allem aus Milchfett und Wasser.	quillbot
+Verb	bestehen in	Dat	to lie in, to consist in	Der Unterschied besteht in der Vorbereitung.	quillbot
+Verb	bestrafen für	Akk	to punish for	Das Gericht bestrafte den Dieb für seine Tat.	quillbot
+Verb	sich beteiligen an	Dat	to take part in	Sie beteiligt sich am Gespräch.	quillbot
+Verb	betrügen um	Akk	to cheat (someone) out of	Bernie Madoff betrog Anleger um ihr Geld.	quillbot
+Verb	bewegen zu	Dat	to move (someone) to	Die Eltern bewogen ihren Sohn zum Umdenken.	quillbot
+Verb	sich bewerben bei	Dat	to apply to (a company)	Laura bewarb sich bei drei Stiftungen.	quillbot
+Verb	sich bewerben um	Akk	to apply for	Sie bewarb sich um ein Stipendium.	quillbot
+Verb	bezahlen mit	Dat	to pay with	Er bezahlt immer mit Bargeld.	quillbot
+Verb	sich beziehen auf	Akk	to refer to	Der Dozent bezog sich auf eine Studie.	quillbot
+Verb	bieten für	Akk	to offer, to bid for	Der Händler bot 600 Euro für das Gemälde.	quillbot
+Verb	bitten um	Akk	to ask for	Die Eigentümerin bat um Bedenkzeit.	quillbot
+Verb	danken für	Akk	to thank for	Sie dankte für das Angebot.	quillbot
+Verb	denken an	Akk	to think of	Luca denkt ständig an sein Studium.	quillbot
+Verb	denken von	Dat	to think of (an opinion)	Was denkt sie von mir?	quillbot
+Verb	diskutieren über	Akk	to discuss	Die Freunde diskutieren über Politik.	quillbot
+Verb	drängen zu	Dat	to press, to urge to	Sie drängte ihn zu einer Entscheidung.	quillbot
+Verb	sich drehen um	Akk	to be about, to revolve around	Für ihn dreht sich alles um Fußball.	quillbot
+Verb	drohen mit	Dat	to threaten with	Er drohte mit einer Kündigung.	quillbot
+Verb	eilen mit	Dat	to be urgent (es eilt mit)	Es eilt nicht mit dem Projekt.	quillbot
+Verb	einladen zu	Dat	to invite to	Wir laden dich zu unserer Party ein!	quillbot
+Verb	sich ekeln vor	Dat	to be disgusted by	Sie ekelt sich vor Würmern.	quillbot*
+Verb	sich erholen von	Dat	to recover from	Anna erholt sich von der Arbeit.	quillbot
+Verb	sich erinnern an	Akk	to remember	Erinnerst du dich an deinen ersten Schultag?	quillbot
+Verb	erkennen an	Dat	to recognise by	Sie erkannte den Täter an einer Narbe im Gesicht.	quillbot
+Verb	sich erkundigen nach	Dat	to ask about, to enquire about	David erkundigte sich nach dem Weg.	quillbot
+Verb	erschrecken über	Akk	to be shocked by	Der Buchhalter erschrak über die Schulden.	quillbot
+Verb	erzählen über	Akk	to tell about	Erzähl mir mehr über deine Hobbys!	quillbot
+Verb	erzählen von	Dat	to tell of	Sie erzählte vor allem von ihren Reisen.	quillbot
+Verb	entbinden von	Dat	to release from	Der König entband den Diener von seinen Pflichten.	quillbot
+Verb	sich entscheiden für	Akk	to decide on, to choose	Sie entschieden sich für eine Reise nach Tokio.	quillbot
+Verb	sich entschließen zu	Dat	to make up one's mind to	Sven entschloss sich zu einem Jurastudium.	quillbot
+Verb	sich entschuldigen bei	Dat	to apologise to	Caro entschuldigte sich bei ihrem Freund.	quillbot
+Verb	sich entschuldigen für	Akk	to apologise for	Sie entschuldigte sich für ihr Verhalten.	quillbot
+Verb	sich entwickeln zu	Dat	to develop into	Die Inflation entwickelt sich zu einem Problem.	quillbot*
+Verb	fehlen an	Dat	to lack (es fehlt an)	Es fehlt uns an nichts.	quillbot
+Verb	fliehen vor	Dat	to flee from	Der Bankräuber floh vor der Polizei.	quillbot
+Verb	folgen aus	Dat	to follow from	Die Konklusion folgt aus den Prämissen.	quillbot
+Verb	folgern aus	Dat	to conclude from	Sie folgert aus den Daten, dass sie richtig liegt.	quillbot
+Verb	fragen nach	Dat	to ask about	Er fragte nach der Bedeutung von ‚Rizz‘.	quillbot
+Verb	sich freuen an	Dat	to take pleasure in	Nils freut sich an der Natur.	quillbot
+Verb	sich freuen auf	Akk	to look forward to	Er freut sich auf die Semesterferien.	quillbot
+Verb	sich freuen über	Akk	to be glad about	Er freut sich über das Geschenk.	quillbot
+Verb	fühlen mit	Dat	to feel for, to sympathise with	Sie fühlte mit den Opfern des Hochwassers.	quillbot
+Verb	führen zu	Dat	to lead to	Das führt zu nichts.	quillbot
+Verb	sich fürchten vor	Dat	to be afraid of	Der Junge fürchtet sich vor Schlangen.	quillbot
+Verb	garantieren für	Akk	to guarantee	Die Firma garantiert für die Qualität der Ware.	quillbot
+Verb	gehen um	Akk	to be about (es geht um)	Es geht um alles.	quillbot
+Verb	gehören zu	Dat	to be one of, to belong to	Sie gehörte zu den Besten des Jahrgangs.	quillbot
+Verb	gelten für	Akk	to apply to	Das Angebot gilt nur für Neukunden.	quillbot
+Verb	gewinnen an	Dat	to gain (in)	Er gewann an Erfahrung.	quillbot
+Verb	sich gewöhnen an	Akk	to get used to	Sie gewöhnte sich an das nasskalte Wetter.	quillbot
+Verb	glauben an	Akk	to believe in	Er glaubt an eine bessere Zukunft.	quillbot
+Verb	gratulieren zu	Dat	to congratulate on	Tim gratuliert seiner Schwester zum Geburtstag.	quillbot
+Verb	grauen vor	Dat	to dread (es graut mir vor)	Ihm graut vor der Prüfung.	quillbot
+Verb	grübeln über	Akk	to brood over	Sie grübelt über das Problem.	quillbot
+Verb	hängen an	Dat	to be attached to	Er hängt an seinem alten Laptop.	quillbot
+Verb	halten für	Akk	to consider (to be)	Ich halte das für einen guten Plan.	quillbot
+Verb	halten von	Dat	to think of (an opinion)	Was hältst du von der Idee?	quillbot
+Verb	halten zu	Dat	to stand by	Sie hält zu ihm.	quillbot
+Verb	sich handeln um	Akk	to be a matter of (es handelt sich um)	Bei dem Hund handelt es sich um einen Dackel.	quillbot
+Verb	handeln von	Dat	to be about (a story)	Der Artikel handelt von Schwarz-Weiß-Denken.	quillbot
+Verb	helfen bei	Dat	to help with	Er hilft seiner Nichte bei den Hausaufgaben.	quillbot
+Verb	helfen gegen	Akk	to be good for, to help against	Was hilft gegen Heuschnupfen?	quillbot
+Verb	herstellen aus	Dat	to make from	Er stellte den Tisch aus alten Paletten her.	quillbot
+Verb	hindern an	Dat	to prevent from	Der Polizist hinderte die Täterin an der Flucht.	quillbot
+Verb	hinweisen auf	Akk	to point out	Der Lektor wies auf Fehler bei der Orthographie hin.	quillbot
+Verb	hoffen auf	Akk	to hope for	Die Veranstalter hoffen auf gutes Wetter.	quillbot
+Verb	hören von	Dat	to hear from, to hear of	Ich habe schon lange nichts mehr von ihm gehört.	quillbot
+Verb	sich informieren über	Akk	to find out about	Sie informiert sich über Pro- und Contra-Argumente.	quillbot
+Verb	sich interessieren für	Akk	to be interested in	Interessierst du dich für Sagen?	quillbot
+Verb	kämpfen für	Akk	to fight for	Die Anwältin kämpft für ihren Mandanten.	quillbot
+Verb	klagen über	Akk	to complain of	Leo klagt über das viele Lernen.	quillbot
+Verb	kommen zu	Dat	to come to (es kam zu)	Es kam zu einer Diskussion.	quillbot
+Verb	sich konzentrieren auf	Akk	to concentrate on	Sie konzentriert sich auf ihre Arbeit.	quillbot
+Verb	sich kümmern um	Akk	to take care of	Kümmerst du dich kurz um die Gäste?	quillbot
+Verb	lachen über	Akk	to laugh at	Er lachte über seinen Fehler.	quillbot
+Verb	leiden an	Dat	to suffer from (an illness)	Sie leidet an einer Allergie.	quillbot
+Verb	leiden unter	Dat	to suffer from (a situation)	Nick leidet unter der Hitze.	quillbot
+Verb	lernen aus	Dat	to learn from	Aus Fehlern lernt man.	quillbot
+Verb	liegen an	Dat	to be due to, to be up to	Jetzt liegt es an dir.	quillbot
+Verb	machen aus	Dat	to make (something) of	Er macht etwas aus sich.	quillbot
+Verb	machen zu	Dat	to turn into	Die Stadt machte das Gebäude zu einem Museum.	quillbot
+Verb	meinen mit	Dat	to mean (by, towards)	Sie meint es gut mit dir.	quillbot
+Verb	nachdenken über	Akk	to think about	Wir denken über den Vorschlag nach.	quillbot
+Verb	nennen nach	Dat	to name after	Er nannte seine Tochter nach seiner Großmutter.	quillbot
+Verb	passen zu	Dat	to go with, to suit	Der Pullover passt zu deiner Hose.	quillbot
+Verb	raten zu	Dat	to advise (to take)	Die Bankberaterin riet zu Aktien.	quillbot
+Verb	rechnen mit	Dat	to expect, to count on	Wir rechnen mit einer schnellen Entscheidung.	quillbot
+Verb	reden über	Akk	to talk about	Die Lehrerin redet über Satzglieder.	quillbot
+Verb	reden von	Dat	to talk of	Er redet ständig von dir!	quillbot
+Verb	retten vor	Dat	to save from	Sie konnte sich vor Angeboten kaum retten.	quillbot
+Verb	riechen nach	Dat	to smell of	Es roch nach gebratenen Champignons.	quillbot
+Verb	sich richten nach	Dat	to go by, to follow	Ich richte mich nach dir.	quillbot*
+Verb	schicken an	Akk	to send to (an address)	Schick den Link bitte an meine E-Mail-Adresse!	quillbot
+Verb	schicken zu	Dat	to send to (a person, place)	Der Schüler wurde zum Direktor geschickt.	quillbot
+Verb	schmecken nach	Dat	to taste of	Die Plätzchen schmecken nach Zimt.	quillbot
+Verb	schimpfen über	Akk	to grumble about	Er schimpfte über die Politik.	quillbot
+Verb	schließen aus	Dat	to conclude from	Er schloss aus den Daten, dass er recht hat.	quillbot
+Verb	schreiben an	Dat	to be writing, to work on (a text)	Sie schreibt an einer Kurzgeschichte.	quillbot
+Verb	schreiben an	Akk	to write to (someone)	Ich schreibe heute an meine Großeltern.	added
+Verb	sich schützen vor	Dat	to protect oneself from	Die Menschen schützen sich vor dem Virus.	quillbot
+Verb	sehen in	Dat	to see (something) in	Er sieht in der Entlassung eine Chance.	quillbot
+Verb	sich sehnen nach	Dat	to long for	Sie sehnt sich nach mehr Ruhe.	quillbot
+Verb	sein aus	Dat	to be made of	Der Tisch ist aus Holz.	quillbot
+Verb	sein für	Akk	to be in favour of	Ich bin für den Vorschlag.	quillbot
+Verb	sein gegen	Akk	to be against	Ich bin gegen den Plan.	quillbot
+Verb	sorgen für	Akk	to look after, to see to	Er sorgt für seine kranke Schwester.	quillbot
+Verb	stehen um	Akk	to stand (wie steht es um)	Wie steht es um das Projekt?	quillbot
+Verb	stehen zu	Dat	to stand by	Die Mitarbeitenden stehen zu ihrem Chef.	quillbot
+Verb	stimmen für	Akk	to vote for	Die Mitglieder stimmten für den Antrag.	quillbot
+Verb	stimmen gegen	Akk	to vote against	Die Mitglieder stimmten gegen den Antrag.	quillbot
+Verb	sich stören an	Dat	to be bothered by	Die Fans stören sich am Abbruch des Spiels.	quillbot
+Verb	stören bei	Dat	to disturb (someone) while	Der Lärm stört mich beim Lesen.	quillbot
+Verb	sich stoßen an	Dat	to take exception to (also: to bump into)	Er stößt sich an ihrem unfreundlichen Ton.	quillbot*
+Verb	streiten mit	Dat	to argue with	Karl streitet mit seiner Ex-Frau.	quillbot
+Verb	streiten über	Akk	to argue about	Sie streiten über Geld.	quillbot
+Verb	stützen auf	Akk	to base on	Wir stützen unsere Beweisführung auf eine Studie.	quillbot
+Verb	suchen nach	Dat	to look for	Er sucht nach einer neuen Wohnung.	quillbot
+Verb	teilnehmen an	Dat	to take part in	Er nimmt an einem Schach-Turnier teil.	quillbot
+Verb	träumen von	Dat	to dream of	Sie träumt von einem Ferienhaus in Italien.	quillbot
+Verb	sich treffen mit	Dat	to meet (with)	Er trifft sich mit seinen Freunden.	quillbot
+Verb	sich trennen von	Dat	to split up with, to part with	Sie hat sich von ihrem Freund getrennt.	quillbot*
+Verb	überreden zu	Dat	to talk (someone) into	Er überredete seinen Kumpel zu einem Film.	quillbot
+Verb	umgehen mit	Dat	to deal with, to handle	Sie geht gut mit Stress um.	quillbot
+Verb	sich unterhalten mit	Dat	to talk to, to chat with	Phil unterhielt sich mit seinen Freunden.	quillbot
+Verb	sich unterhalten über	Akk	to talk about	Sie unterhielten sich über ein Event.	quillbot
+Verb	sich verabreden mit	Dat	to arrange to meet	Kai hat sich mit Nina verabredet.	quillbot
+Verb	verbinden mit	Dat	to connect to	Der Computer ist mit dem Internet verbunden.	quillbot
+Verb	vergleichen mit	Dat	to compare with	Er verglich den Preis im Laden mit dem bei Amazon.	quillbot
+Verb	sich verhalten gegenüber	Dat	to behave towards	Sie verhält sich freundlich gegenüber allen.	quillbot*
+Verb	verhelfen zu	Dat	to help (someone) to get	Sie hat ihm zu einem neuen Job verholfen.	quillbot
+Verb	verkaufen an	Akk	to sell to	Er verkauft sein Sofa an die Nachmieterin.	quillbot
+Verb	verkaufen für	Akk	to sell for (a price)	Er verkaufte es für 50 Euro.	quillbot
+Verb	verlangen nach	Dat	to ask for, to call for	Der Gast verlangte nach einem zusätzlichen Teller.	quillbot
+Verb	verlangen von	Dat	to demand from	Sie verlangt eine Entschuldigung von dir.	quillbot
+Verb	sich verlassen auf	Akk	to rely on	Ich verlasse mich auf dich.	quillbot
+Verb	sich verlieben in	Akk	to fall in love with	Sie hat sich in das Land und die Menschen verliebt.	quillbot
+Verb	versichern gegen	Akk	to insure against	Marie versichert ihr Gepäck gegen Verlust.	quillbot
+Verb	sich verstehen mit	Dat	to get on with	Er versteht sich gut mit seiner Dozentin.	quillbot
+Verb	verstehen von	Dat	to know about	Verstehst du was von rhetorischen Mitteln?	quillbot
+Verb	verteilen an	Akk	to hand out to	Sie verteilte das Essen an die Obdachlosen.	quillbot
+Verb	verwechseln mit	Dat	to mix up with	Ich verwechsle ständig effektiv mit effizient.	quillbot
+Verb	vorlesen aus	Dat	to read aloud from	Die Autorin las aus ihrer Erzählung vor.	quillbot
+Verb	sich vorbereiten auf	Akk	to prepare for	Sie bereitet sich auf das Examen vor.	quillbot
+Verb	sich wagen an	Akk	to venture to tackle	Wer wagt sich an diese Aufgabe?	quillbot
+Verb	warnen vor	Dat	to warn of	Der Richter warnte vor den Folgen eines Meineids.	quillbot
+Verb	warten auf	Akk	to wait for	Lisa wartet auf den Bus.	quillbot
+Verb	sich wenden an	Akk	to turn to, to contact	Wenden Sie sich bitte an Ihre Bankberaterin.	quillbot
+Verb	werden aus	Dat	to become of, to come of	Aus der Idee wurde ein Unternehmen.	quillbot
+Verb	werden zu	Dat	to turn into	Die Geschichte wurde zu einer Legende.	quillbot
+Verb	wissen von	Dat	to know about	Weiß er von der Überraschungsparty?	quillbot
+Verb	sich wundern über	Akk	to be surprised at	Ich wundere mich über dein Verhalten.	quillbot
+Verb	zählen auf	Akk	to count on	Wir zählen auf dich!	quillbot
+Verb	zählen zu	Dat	to be one of	Er zählt zu den besten Spielern der Liga.	quillbot*
+Verb	zurückführen auf	Akk	to attribute to	Das ist auf ein Missverständnis zurückzuführen.	quillbot
+Verb	zweifeln an	Dat	to doubt	Die Richterin zweifelte an der Aussage des Zeugen.	quillbot
+Verb	sprechen über	Akk	to talk about	Wir haben lange über den Urlaub gesprochen.	added
+Verb	sprechen mit	Dat	to speak to	Ich muss mit meinem Chef sprechen.	added
+Verb	sich ärgern über	Akk	to be annoyed about	Er ärgert sich über den Stau.	added
+Verb	telefonieren mit	Dat	to be on the phone with	Sie telefoniert jeden Abend mit ihrer Mutter.	added
+Verb	sich verabschieden von	Dat	to say goodbye to	Wir verabschieden uns von unseren Gästen.	added
+Verb	verzichten auf	Akk	to do without, to give up	Er verzichtet auf Zucker.	added
+Verb	reagieren auf	Akk	to react to	Wie hat sie auf die Nachricht reagiert?	added
+Verb	sich einigen auf	Akk	to agree on	Wir haben uns auf einen Termin geeinigt.	added
+Verb	sich anpassen an	Akk	to adapt to	Sie hat sich schnell an die neue Stadt angepasst.	added
+Verb	sich halten an	Akk	to stick to (rules)	Bitte halten Sie sich an die Regeln.	added
+Verb	sich wehren gegen	Akk	to defend oneself against	Die Bürger wehren sich gegen den Plan.	added
+Verb	protestieren gegen	Akk	to protest against	Tausende protestierten gegen das Gesetz.	added
+Verb	abstimmen über	Akk	to vote on	Morgen stimmt das Parlament über das Gesetz ab.	added
+Verb	sich engagieren für	Akk	to be committed to	Sie engagiert sich für den Umweltschutz.	added
+Verb	profitieren von	Dat	to benefit from	Alle profitieren von dem neuen Angebot.	added
+Verb	überzeugen von	Dat	to convince of	Er hat mich von seiner Idee überzeugt.	added
+Verb	sich sorgen um	Akk	to worry about	Die Eltern sorgen sich um ihren Sohn.	added
+Verb	sich beklagen über	Akk	to complain about	Die Gäste beklagten sich über den Lärm.	added
+Verb	sich eignen für	Akk	to be suitable for	Das Buch eignet sich gut für Anfänger.	added
+Verb	sich spezialisieren auf	Akk	to specialise in	Die Firma hat sich auf Solaranlagen spezialisiert.	added
+Verb	sich beschränken auf	Akk	to limit oneself to	Wir beschränken uns auf das Wichtigste.	added
+Verb	sich ergeben aus	Dat	to result from	Aus der Analyse ergeben sich neue Fragen.	added
+Adjektiv	stolz auf	Akk	proud of	Die Eltern sind stolz auf ihre Tochter.	added
+Adjektiv	interessiert an	Dat	interested in	Ich bin an dem Job sehr interessiert.	added
+Adjektiv	abhängig von	Dat	dependent on	Viele Länder sind abhängig vom Tourismus.	added
+Adjektiv	zufrieden mit	Dat	satisfied with	Der Chef ist mit unserer Arbeit zufrieden.	added
+Adjektiv	verliebt in	Akk	in love with	Er ist in seine Nachbarin verliebt.	added
+Adjektiv	böse auf	Akk	angry with	Bist du noch böse auf mich?	added
+Adjektiv	wütend auf	Akk	furious with	Sie ist wütend auf ihren Bruder.	added
+Adjektiv	neidisch auf	Akk	envious of	Er ist neidisch auf den Erfolg seines Kollegen.	added
+Adjektiv	eifersüchtig auf	Akk	jealous of	Sie ist eifersüchtig auf seine Exfreundin.	added
+Adjektiv	gespannt auf	Akk	eager to see, curious about	Ich bin gespannt auf das Ergebnis.	added
+Adjektiv	angewiesen auf	Akk	reliant on	Viele Rentner sind auf Hilfe angewiesen.	added
+Adjektiv	bereit zu	Dat	ready for, willing to	Wir sind zu einem Kompromiss bereit.	added
+Adjektiv	fähig zu	Dat	capable of	Er ist zu allem fähig.	added
+Adjektiv	freundlich zu	Dat	friendly to	Die Verkäuferin war sehr freundlich zu uns.	added
+Adjektiv	nett zu	Dat	nice to	Sei bitte nett zu deiner Schwester!	added
+Adjektiv	verheiratet mit	Dat	married to	Sie ist seit zehn Jahren mit ihm verheiratet.	added
+Adjektiv	verwandt mit	Dat	related to	Bist du mit ihr verwandt?	added
+Adjektiv	befreundet mit	Dat	friends with	Ich bin mit seinem Bruder befreundet.	added
+Adjektiv	einverstanden mit	Dat	in agreement with	Bist du mit dem Vorschlag einverstanden?	added
+Adjektiv	fertig mit	Dat	finished with	Bist du schon mit den Hausaufgaben fertig?	added
+Adjektiv	beschäftigt mit	Dat	busy with	Sie ist gerade mit dem Umzug beschäftigt.	added
+Adjektiv	enttäuscht von	Dat	disappointed in, by	Ich bin von dem Film enttäuscht.	added
+Adjektiv	begeistert von	Dat	enthusiastic about	Die Kinder sind von dem Zirkus begeistert.	added
+Adjektiv	überzeugt von	Dat	convinced of	Er ist von seiner Idee überzeugt.	added
+Adjektiv	müde von	Dat	tired from	Ich bin müde von der langen Reise.	added
+Adjektiv	frei von	Dat	free of	Das Produkt ist frei von Zucker.	added
+Adjektiv	typisch für	Akk	typical of	Das ist typisch für ihn!	added
+Adjektiv	verantwortlich für	Akk	responsible for	Wer ist für das Projekt verantwortlich?	added
+Adjektiv	dankbar für	Akk	grateful for	Ich bin dir für deine Hilfe sehr dankbar.	added
+Adjektiv	bekannt für	Akk	known for	Die Stadt ist bekannt für ihr Bier.	added
+Adjektiv	wichtig für	Akk	important for	Sport ist wichtig für die Gesundheit.	added
+Adjektiv	geeignet für	Akk	suitable for	Die Wohnung ist nicht für Kinder geeignet.	added
+Adjektiv	zuständig für	Akk	in charge of	Wer ist hier für die Anmeldung zuständig?	added
+Adjektiv	froh über	Akk	glad about	Ich bin froh über deine Nachricht.	added
+Adjektiv	traurig über	Akk	sad about	Sie ist traurig über den Abschied.	added
+Adjektiv	glücklich über	Akk	happy about	Er ist glücklich über die gute Note.	added
+Adjektiv	erstaunt über	Akk	astonished at	Wir waren erstaunt über den hohen Preis.	added
+Adjektiv	besorgt um	Akk	worried about	Die Mutter ist besorgt um ihr Kind.	added
+Adjektiv	gewöhnt an	Akk	used to	Ich bin an das frühe Aufstehen gewöhnt.	added
+Adjektiv	reich an	Dat	rich in	Orangen sind reich an Vitamin C.	added
+Adjektiv	arm an	Dat	low in	Das Essen ist arm an Fett.	added
+Adjektiv	schuld an	Dat	to blame for	Wer ist schuld an dem Unfall?	added
+Adjektiv	beteiligt an	Dat	involved in	Er war an dem Projekt beteiligt.	added
+Adjektiv	gut in	Dat	good at (a subject)	Sie ist gut in Mathe.	added
+Adjektiv	allergisch gegen	Akk	allergic to	Ich bin allergisch gegen Nüsse.	added
+Nomen	die Angst vor	Dat	fear of	Viele Menschen haben Angst vor Spinnen.	added
+Nomen	das Interesse an	Dat	interest in	Er hat großes Interesse an Geschichte.	added
+Nomen	die Lust auf	Akk	the mood for	Ich habe Lust auf ein Eis.	added
+Nomen	die Freude an	Dat	pleasure in	Sie hat viel Freude an ihrer Arbeit.	added
+Nomen	die Hoffnung auf	Akk	hope of	Es gibt noch Hoffnung auf Besserung.	added
+Nomen	die Liebe zu	Dat	love of, for	Seine Liebe zur Musik ist groß.	added
+Nomen	der Respekt vor	Dat	respect for	Die Kinder haben Respekt vor dem Lehrer.	added
+Nomen	die Kritik an	Dat	criticism of	Es gibt viel Kritik an dem neuen Gesetz.	added
+Nomen	die Beziehung zu	Dat	relationship with	Sie hat eine gute Beziehung zu ihren Eltern.	added
+Nomen	die Antwort auf	Akk	answer to	Ich warte noch auf eine Antwort auf meine Frage.	added
+Nomen	die Frage nach	Dat	question of, about	Die Frage nach dem Preis ist wichtig.	added
+Nomen	die Bitte um	Akk	request for	Wir haben eine Bitte um Hilfe bekommen.	added
+Nomen	der Einfluss auf	Akk	influence on	Das Wetter hat Einfluss auf unsere Stimmung.	added
+Nomen	die Erinnerung an	Akk	memory of	Ich habe schöne Erinnerungen an meine Kindheit.	added
+Nomen	der Grund für	Akk	reason for	Was ist der Grund für die Verspätung?	added
+Nomen	die Lösung für	Akk	solution to	Wir suchen eine Lösung für das Problem.	added
+Nomen	die Sorge um	Akk	concern for	Die Sorge um die Umwelt wächst.	added
+Nomen	die Verantwortung für	Akk	responsibility for	Er trägt die Verantwortung für das Team.	added
+Nomen	das Vertrauen in	Akk	trust in	Sie hat großes Vertrauen in ihre Ärztin.	added
+Nomen	der Zweifel an	Dat	doubt about	Es gibt keinen Zweifel an seiner Ehrlichkeit.	added
+Nomen	die Teilnahme an	Dat	participation in	Die Teilnahme am Kurs ist kostenlos.	added
+Nomen	der Anspruch auf	Akk	right to, claim to	Jeder hat Anspruch auf Urlaub.	added
+Nomen	die Abhängigkeit von	Dat	dependence on	Die Abhängigkeit vom Öl ist ein Problem.	added
+Nomen	die Begeisterung für	Akk	enthusiasm for	Seine Begeisterung für Fußball ist ansteckend.	added
+Nomen	der Kontakt zu	Dat	contact with	Ich habe keinen Kontakt mehr zu ihm.	added
+Nomen	die Hilfe bei	Dat	help with	Danke für deine Hilfe beim Umzug!	added

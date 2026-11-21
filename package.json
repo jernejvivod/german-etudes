@@ -1,0 +1,15 @@
+{
+  "name": "german-etudes",
+  "version": "0.1.0",
+  "description": "Short daily German drills: adjective endings, passive voice, …",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js"
+  },
+  "devDependencies": {
+    "electron": "^45.2.1"
+  },
+  "productName": "German Etudes"
+}

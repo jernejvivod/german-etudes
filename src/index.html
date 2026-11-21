@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>German Etudes</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main>
+  <section id="home" class="screen">
+    <h1>German Etudes</h1>
+    <p class="lead">Short daily drills. Pick today's topic.</p>
+    <div id="topics" class="topics"></div>
+    <label class="setting" id="speak-setting" hidden><input type="checkbox" id="speak-toggle"> Read the solved sentence aloud after checking · <kbd>L</kbd> replays it</label>
+  </section>
+
+  <section id="options" class="screen" hidden>
+    <button id="btn-home" class="ghost back" title="All topics (Esc)">← Topics</button>
+    <h1 id="options-title"></h1>
+    <p id="options-intro" class="lead"></p>
+    <div id="options-form" class="options"></div>
+    <p id="options-error" class="error" hidden></p>
+    <div id="options-actions" class="actions"></div>
+  </section>
+
+  <section id="drill" class="screen" hidden>
+    <header class="bar">
+      <button id="btn-quit" class="ghost" title="Back to options (Esc)">✕</button>
+      <div class="progress"><div id="progress-fill"></div></div>
+      <span id="progress-text" class="muted"></span>
+    </header>
+
+    <div class="card">
+      <div id="tags" class="tags"></div>
+      <p id="prompt" class="prompt" lang="de" hidden></p>
+      <p id="sentence" class="sentence" lang="de"></p>
+      <div id="feedback" class="feedback" lang="de" hidden></div>
+    </div>
+
+    <div class="actions">
+      <button id="btn-check" class="primary">Check <kbd>↵</kbd></button>
+      <button id="btn-next" class="primary" hidden>Next <kbd>↵</kbd></button>
+    </div>
+    <p id="drill-hint" class="hint"></p>
+  </section>
+
+  <section id="summary" class="screen" hidden>
+    <h2>Sentences done</h2>
+    <p id="summary-score" class="score"></p>
+    <ol id="mistakes" class="mistakes" lang="de"></ol>
+    <div class="actions">
+      <button id="btn-summary-next" class="primary"></button>
+    </div>
+  </section>
+
+  <section id="table" class="screen" hidden>
+    <h2 id="table-title"></h2>
+    <p class="lead"><span id="table-lead"></span> <kbd>↵</kbd> or <kbd>Tab</kbd> goes down the column, arrows move around.</p>
+    <div id="tables" class="tables"></div>
+    <p id="table-score" class="score" hidden></p>
+    <div class="actions">
+      <button id="btn-table-check" class="primary">Check</button>
+      <button id="btn-table-retry" hidden>Retry mistakes</button>
+      <button id="btn-table-next"></button>
+    </div>
+  </section>
+  <p id="toast" class="toast" hidden>Press Esc again to quit this round</p>
+</main>
+<script src="core/cloze.js"></script>
+<script src="core/store.js"></script>
+<script src="core/declension.js"></script>
+<script src="core/lexicon.js"></script>
+<script src="core/verbs.js"></script>
+<script src="core/vocab.js"></script>
+<script src="topics/adjectives.js"></script>
+<script src="topics/passive.js"></script>
+<script src="topics/prepositions.js"></script>
+<script src="topics/determiners.js"></script>
+<script src="topics/pronouns.js"></script>
+<script src="topics/verbforms.js"></script>
+<script src="topics/wordorder.js"></script>
+<script src="topics/nominal.js"></script>
+<script src="topics/fvg.js"></script>
+<script src="topics/anki.js"></script>
+<script src="core/app.js"></script>
+</body>
+</html>
