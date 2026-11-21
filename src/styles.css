@@ -132,6 +132,8 @@ kbd {
 #daily:empty { display: none; }
 .topic.daily { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); }
 .topic.daily.done .topic-sub { color: var(--ok); font-weight: 600; }
+/* The link to Progress, under the daily cards; its text lines up with them. */
+button.ghost.more { display: block; margin: -4px 0 12px -10px; color: var(--accent); }
 .setting { display: flex; gap: 8px; align-items: center; margin-top: 24px; color: var(--muted); cursor: pointer; }
 .setting input { accent-color: var(--accent); }
 .setting[hidden] { display: none; }
@@ -181,6 +183,36 @@ button.ghost { border: none; background: none; padding: 6px 10px; color: var(--m
 .back { margin-left: -10px; } /* the text lines up with the content below */
 .bar { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
 .bar .back + .ghost { margin-left: -8px; } /* ✕ belongs with ← Topics, not with the progress */
+
+/* Progress: a row per topic (toggle, then its line with the marks), its options' parts nested below. */
+.checklist, .check-options, .check-parts { list-style: none; padding: 0; margin: 0; }
+.checklist { display: grid; gap: 8px; }
+.check-row { display: flex; align-items: center; gap: 4px; }
+.check-toggle, .check-spacer { flex: none; width: 36px; text-align: center; }
+button.check-toggle { padding: 4px 0; font-size: 24px; line-height: 1; }
+.check-line {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-end; /* marks that wrap stay on the right */
+  gap: 4px 16px;
+  text-align: left;
+  padding: 10px 16px;
+}
+.check-title { font-size: 18px; margin-right: auto; }
+.check-mark { font-weight: 500; color: var(--muted); }
+.check-mark.ok { color: var(--ok); }
+.check-warn { flex-basis: 100%; font-size: 14px; font-weight: 400; color: var(--bad); }
+.check-options { display: grid; gap: 10px; margin: 10px 0 8px 56px; }
+.check-options[hidden] { display: none; }
+.check-option { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.check-parts { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 2px; }
+.check-part { color: var(--muted); }
+.check-part.ok { color: var(--text); }
+.check-part.ok .tick { color: var(--ok); }
+.tick { display: inline-block; width: 1em; text-align: center; font-weight: 700; }
+.check-only { font-size: 13px; color: var(--muted); }
 
 /* Drill */
 .progress { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }

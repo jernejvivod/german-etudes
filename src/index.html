@@ -13,8 +13,19 @@
     <h1>German Etudes</h1>
     <p class="lead">Short daily drills. Pick today's topic, or go over the ones you have marked learnt: their sentences in the Daily review, their tables in Daily tables.</p>
     <div id="daily" class="topics"></div>
+    <button id="btn-progress" class="ghost more">Progress →</button>
     <div id="topics" class="topics"></div>
     <label class="setting" id="speak-setting" hidden><input type="checkbox" id="speak-toggle"> Read the solved sentence aloud after checking · <kbd>L</kbd> replays it</label>
+  </section>
+
+  <section id="progress" class="screen" hidden>
+    <header class="bar">
+      <button class="ghost back to-topics" title="All topics (Esc)" aria-label="Back to topics" aria-keyshortcuts="Escape Shift+Escape">← Topics</button>
+    </header>
+    <h1>Progress</h1>
+    <p class="lead">✓ where marked learnt: Sentences learnt for the Daily review, Table learnt for Daily tables. A topic's line opens its options.</p>
+    <p id="progress-count" class="score"></p>
+    <ul id="progress-tree" class="checklist"></ul>
   </section>
 
   <section id="options" class="screen" hidden>
@@ -85,6 +96,7 @@
 <script src="core/store.js"></script>
 <script src="core/scope.js"></script>
 <script src="core/daily.js"></script>
+<script src="core/progress.js"></script>
 <script src="core/declension.js"></script>
 <script src="core/lexicon.js"></script>
 <script src="core/verbs.js"></script>
