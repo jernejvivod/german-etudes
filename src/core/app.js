@@ -54,16 +54,8 @@
 
   // ---------- Helpers ----------
 
-  function settingsKey(t) {
-    return `etudes-settings-${t.id}`;
-  }
-
-  function loadSettings(t) {
-    return scope.fitSettings(t, store.read(settingsKey(t), {}));
-  }
-
   function saveSettings() {
-    store.write(settingsKey(topic), settings);
+    store.write(daily.settingsKey(topic), settings);
   }
 
   function el(tag, className, text) {
@@ -276,7 +268,7 @@
   // fresh: coming from the topic list, so the topic (re)loads its data; going back from a round keeps what is loaded.
   async function openTopic(t, fresh = false) {
     topic = t;
-    settings = loadSettings(t);
+    settings = daily.topicSettings(t);
     $('options-title').textContent = t.title;
     renderOptions();
     renderLearnt();
@@ -331,14 +323,15 @@
       const mark = own?.[kind];
       const name = `learnt-${kind}`;
       const setMark = (on) => {
-        daily.setMark(topic.id, kind, on ? scope.scopeOf(topic, settings, kind) : null);
+        daily.setMark(topic.id, kind, on ? daily.partsOf(topic, kind, { settings }) : null);
         renderLearnt();
         validateOptions();
         box.querySelector(`input[name="${name}"]`).focus(); // the re-render dropped the focused control
       };
       box.append(choiceLabel('checkbox', name, { label, detail }, !!mark, (e) => setMark(e.target.checked)));
-      if (mark && !scope.sameScope(topic, mark.settings, settings, kind)) {
-        const note = el('p', 'learnt-note', `${uses}: ${scope.scopeText(topic, scope.fitSettings(topic, mark.settings), kind)}.`);
+      const used = mark && daily.settingsFor(topic, kind, daily.partsOf(topic, kind, mark), settings);
+      if (used && !scope.sameScope(topic, used, settings, kind)) {
+        const note = el('p', 'learnt-note', `${uses}: ${scope.scopeText(topic, used, kind)}.`);
         const use = el('button', null, 'Use these settings');
         use.type = 'button';
         use.addEventListener('click', () => setMark(true));
