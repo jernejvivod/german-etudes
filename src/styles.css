@@ -178,41 +178,49 @@ button:disabled { opacity: 0.45; cursor: default; }
 button:focus-visible, input:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 2px; }
 button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
 button.ghost { border: none; background: none; padding: 6px 10px; color: var(--muted); }
+/* A button that reads as a link: a topic's name on Progress, Edit in Progress. */
+button.link { border: none; background: none; padding: 2px 0; border-radius: 4px; color: var(--accent); text-align: left; }
+button.link:hover { text-decoration: underline; }
 
 /* Top bar: ← Topics on every screen but the list; a drill adds ✕ and the progress. */
 .back { margin-left: -10px; } /* the text lines up with the content below */
 .bar { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
 .bar .back + .ghost { margin-left: -8px; } /* ✕ belongs with ← Topics, not with the progress */
 
-/* Progress: a row per topic (toggle, then its line with the marks), its options' parts nested below. */
-.checklist, .check-options, .check-parts { list-style: none; padding: 0; margin: 0; }
+/* Progress: a row per topic (toggle, then its line: its name and a switch per kind), its options' parts below, in a
+   grid whose columns (Sentences, Table, the part's name) every option shares. */
+.checklist, .check-parts { list-style: none; padding: 0; margin: 0; }
 .checklist { display: grid; gap: 8px; }
-.check-row { display: flex; align-items: center; gap: 4px; }
-.check-toggle, .check-spacer { flex: none; width: 36px; text-align: center; }
+.checklist input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.check-row { display: flex; align-items: flex-start; gap: 4px; }
+.check-toggle, .check-spacer { flex: none; width: 36px; margin-top: 9px; text-align: center; } /* level with the name */
 button.check-toggle { padding: 4px 0; font-size: 24px; line-height: 1; }
 .check-line {
   flex: 1;
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: flex-end; /* marks that wrap stay on the right */
-  gap: 4px 16px;
-  text-align: left;
+  align-items: center;
+  justify-content: flex-end; /* switches that wrap stay on the right */
+  gap: 4px 20px;
   padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
 }
-.check-title { font-size: 18px; margin-right: auto; }
-.check-mark { font-weight: 500; color: var(--muted); }
-.check-mark.ok { color: var(--ok); }
-.check-warn { flex-basis: 100%; font-size: 14px; font-weight: 400; color: var(--bad); }
-.check-options { display: grid; gap: 10px; margin: 10px 0 8px 56px; }
+button.check-title { font-size: 18px; margin-right: auto; color: var(--text); }
+.check-mark { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; }
+.check-count { min-width: 2.5em; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.check-warn { flex-basis: 100%; font-size: 14px; color: var(--bad); }
+.check-options { display: grid; grid-template-columns: auto auto 1fr; align-items: center; margin: 8px 0 8px 56px; }
+.check-options.single { grid-template-columns: auto 1fr; }
 .check-options[hidden] { display: none; }
-.check-option { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
-.check-parts { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 2px; }
-.check-part { color: var(--muted); }
-.check-part.ok { color: var(--text); }
-.check-part.ok .tick { color: var(--ok); }
-.tick { display: inline-block; width: 1em; text-align: center; font-weight: 700; }
-.check-only { font-size: 13px; color: var(--muted); }
+.check-cols, .check-parts, .check-part { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; }
+.check-cols span, .check-option { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.check-cols span { padding: 0 8px; text-align: center; }
+.check-option { grid-column: 1 / -1; margin-top: 10px; }
+.check-cell { display: flex; justify-content: center; padding: 3px 8px; }
+.check-label { padding-left: 6px; color: var(--muted); }
+.check-part.ok .check-label { color: var(--text); }
 
 /* Drill */
 .progress { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }

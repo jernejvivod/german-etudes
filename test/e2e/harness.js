@@ -86,9 +86,9 @@ function driver(send, dir, saidPath) {
   const toast = () => evaluate(`(() => { const t = document.getElementById('toast'); return t.hidden ? null : t.textContent; })()`);
   const click = (selector) => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
   const text = (selector) => evaluate(`document.querySelector(${JSON.stringify(selector)}).textContent`);
-  const KEYS = { Escape: 27, Enter: 13, ArrowDown: 40 };
+  const KEYS = { Escape: 27, Enter: 13, ArrowDown: 40, Space: 32 };
   async function key(name, shift = false, autoRepeat = false) {
-    const base = { key: name, code: name, windowsVirtualKeyCode: KEYS[name], modifiers: shift ? 8 : 0, autoRepeat };
+    const base = { key: name === 'Space' ? ' ' : name, code: name, windowsVirtualKeyCode: KEYS[name], modifiers: shift ? 8 : 0, autoRepeat };
     // Enter carries text, so that on a button it clicks it as a real key would.
     await send('Input.dispatchKeyEvent', { ...base, type: name === 'Enter' ? 'keyDown' : 'rawKeyDown', ...(name === 'Enter' && { text: '\r' }) });
     await send('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
@@ -110,11 +110,18 @@ function driver(send, dir, saidPath) {
   // A choice on the options screen by its label (Perfekt, der-words …).
   const choose = (label) => evaluate(`[...document.querySelectorAll('#options label.radio')]
     .find((l) => l.querySelector('b').textContent === ${JSON.stringify(label)}).querySelector('input').click()`);
+  // The labels of an option's ticked choices on the options screen (Tenses: ['Präsens', …]).
+  const checkedChoices = (key) => evaluate(`[...document.querySelectorAll('#options-form input[name=${JSON.stringify(key)}]:checked')]
+    .map((i) => i.closest('label').querySelector('b').textContent)`);
+  // On Progress: focuses and clicks a part's box for a kind (Passiv, sentences, tenses, praet), or a topic's switch.
+  const press = (id) => evaluate(`(() => { const box = document.getElementById(${JSON.stringify(id)}); box.focus(); box.click(); })()`);
+  const tickPart = (topicId, kind, key, value) => press(`progress-${topicId}-${kind}-${key}-${value}`);
+  const tickTopic = (topicId, kind) => press(`progress-${topicId}-${kind}`);
   // The learnt marks as stored.
-  const learnt = () => evaluate(`JSON.parse(localStorage.getItem('etudes-learnt'))`);
+  const learnt = () => evaluate(`Etudes.store.read('etudes-learnt', null)`);
   const said = () => (fs.existsSync(saidPath) ? fs.readFileSync(saidPath, 'utf8').split('\n').filter(Boolean) : []);
   const ranOnTempProfile = () => fs.existsSync(path.join(dir, 'ud', 'Local Storage'));
-  return { send, evaluate, waitFor, screen, focused, toast, click, text, key, shot, openTopic, choose, learnt, said, ranOnTempProfile };
+  return { send, evaluate, waitFor, screen, focused, toast, click, text, key, shot, openTopic, choose, checkedChoices, tickPart, tickTopic, learnt, said, ranOnTempProfile };
 }
 
 // Starts the app on a throwaway profile, waits for its topic list and German voice, runs fn(app) and closes it again.

@@ -19,7 +19,7 @@ test('marking tables learnt and Daily tables', { timeout: 120000, skip }, () => 
   assert.equal(await card('daily-tables'), 'No table marked learnt yet');
   await openTopic('daily-tables');
   assert.equal(await text('#options-title'), 'Daily tables');
-  assert.match(await text('#options-error'), /^No table is marked learnt yet\. Open Adjektivendungen, .* and turn on Table learnt on its options screen\.$/);
+  assert.match(await text('#options-error'), /^No table is marked learnt yet\. In Progress, tick Table for Adjektivendungen, .* or Nominalisierung\.$/);
   assert.equal(await evaluate(`document.querySelector('#options-actions button').disabled`), true);
   assert.equal(await evaluate(`document.getElementById('options-learnt').hidden`), true, 'no switch on Daily tables itself');
   await key('Escape');
@@ -29,7 +29,7 @@ test('marking tables learnt and Daily tables', { timeout: 120000, skip }, () => 
   await openTopic('passive');
   assert.deepEqual(await evaluate(`[...document.querySelectorAll('#options-learnt input')].map((i) => i.name)`), ['learnt-sentences', 'learnt-table']);
   await click('#options-learnt input[name="learnt-table"]');
-  assert.deepEqual(await learnt(), { passive: { table: { settings: { kinds: ['werden'], tenses: ['praes', 'praet', 'perf'] }, since: (await learnt()).passive.table.since } } });
+  assert.deepEqual(await learnt(), { passive: { table: { parts: { kinds: ['werden'], tenses: ['praes', 'praet', 'perf'] }, since: (await learnt()).passive.table.since } } });
   await shot('tables-2-switches');
   await key('Escape');
 
@@ -37,7 +37,7 @@ test('marking tables learnt and Daily tables', { timeout: 120000, skip }, () => 
   await openTopic('determiners');
   await choose('der-words');
   await click('#options-learnt input[name="learnt-table"]');
-  assert.deepEqual((await learnt()).determiners.table.settings, { families: ['ein'] });
+  assert.deepEqual((await learnt()).determiners.table.parts, { families: ['ein'] });
   await choose('Dativ');
   assert.deepEqual(await notes(), [], 'the cases are not part of the table');
   await choose('Dativ');

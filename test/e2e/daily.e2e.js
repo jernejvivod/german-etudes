@@ -23,7 +23,7 @@ test('marking topics learnt and the Daily review', { timeout: 120000, skip }, ()
   await openTopic('daily');
   assert.equal(await text('#options-title'), 'Daily review');
   assert.equal(await evaluate(`document.querySelector('#options-actions button').disabled`), true);
-  assert.equal(await text('#options-error'), 'No topic is marked learnt yet. Open a topic, choose the parts you know and turn on Sentences learnt.');
+  assert.equal(await text('#options-error'), 'No topic is marked learnt yet. Open Progress and tick the parts you know for Sentences.');
   assert.equal(await evaluate(`document.getElementById('options-learnt').hidden`), true, 'no switch on the review itself');
   await key('Escape');
   assert.equal(await screen(), 'home');
@@ -33,7 +33,7 @@ test('marking topics learnt and the Daily review', { timeout: 120000, skip }, ()
   await choose('Perfekt');
   await click('#options-learnt input[name="learnt-sentences"]');
   const passive = (await learnt()).passive.sentences;
-  assert.deepEqual(passive.settings, { kinds: ['werden'], tenses: ['praes', 'praet'] });
+  assert.deepEqual(passive.parts, { kinds: ['werden'], tenses: ['praes', 'praet'] });
   assert.equal(await note(), null);
   // Other settings show which ones the review uses, until they are taken over or undone.
   await choose('Perfekt');
