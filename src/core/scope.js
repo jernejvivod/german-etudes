@@ -1,5 +1,6 @@
 // A topic's settings as the shell and the daily exercises see them: fitting saved ones to the options offered now, what
-// is wrong with them, and the part that is a topic's learnt scope. Each kind of mark (daily.js) has its own:
+// is wrong with them, and the part that is a topic's learnt scope, whose tick-box choices are the parts a mark ticks
+// (partGroups). Each kind of mark (daily.js) has its own:
 //   sentences: every option but those marked round: true, which only shape the topic's own round (its length, the order
 //     of the adjectives), and those with a daily value, which the Daily review always uses (daily: 'anki', My Anki words);
 //   table: the options marked table, the ones its table depends on — table: true, or a function giving the part of the
@@ -44,24 +45,29 @@
     return Object.fromEntries(topic.options.filter((opt) => inScope(opt, kind)).map((opt) => [opt.key, scoped(opt, settings[opt.key], kind)]));
   }
 
-  // Whether two settings have the same scope (a stored one is fitted first, as the daily exercise would use it).
-  function sameScope(topic, a, b, kind = 'sentences') {
-    const key = (s) => JSON.stringify(scopeOf(topic, fitSettings(topic, s), kind));
-    return key(a) === key(b);
-  }
+  // The tick-box options whose choices are a kind of mark's parts, in the options' order: those in its scope that hold a
+  // choice (Passiv: both; Artikelwörter's table: Determiners only; Funktionsverbgefüge: none).
+  const partGroups = (topic, kind = 'sentences') => topic.options
+    .filter((opt) => opt.type === 'checkboxes' && inScope(opt, kind) && scopeChoices(opt, kind).length);
 
-  // The scope in words, so two of them can be told apart: the chosen parts ("Vorgangspassiv · Präsens, Präteritum"; an
-  // option with every part ticked is "all …", and with nothing left out just "all", or for a table "the whole table"),
-  // then the switches that are on ("with hints") and the other choices ("Cards due within: 1 week").
-  function scopeText(topic, settings, kind = 'sentences') {
-    const options = topic.options.filter((opt) => inScope(opt, kind));
-    const values = scopeOf(topic, settings, kind);
-    const parts = options.filter((opt) => opt.type === 'checkboxes').map((opt) => {
-      const chosen = opt.choices.filter((c) => values[opt.key]?.includes(c.value));
+  // Parts ({ [key]: values }) in words: "Vorgangspassiv · Präsens, Präteritum"; an option with every part is "all …",
+  // and with nothing left out just "all", or for a table "the whole table". An option with no part is left out.
+  function partsText(topic, parts, kind = 'sentences') {
+    const groups = partGroups(topic, kind).map((opt) => {
+      const chosen = opt.choices.filter((c) => parts[opt.key]?.includes(c.value));
       const all = chosen.length === scopeChoices(opt, kind).length;
       return { all, text: all ? `all ${opt.label.toLowerCase()}` : chosen.map((c) => c.label).join(', ') };
     });
-    const words = parts.every((p) => p.all) ? [kind === 'table' ? 'the whole table' : 'all'] : parts.map((p) => p.text);
+    if (groups.every((g) => g.all)) return kind === 'table' ? 'the whole table' : 'all';
+    return groups.map((g) => g.text).filter(Boolean).join(' · ');
+  }
+
+  // The scope in words, so two of them can be told apart: the chosen parts (partsText), then the switches that are on
+  // ("with hints") and the other choices ("Cards due within: 1 week").
+  function scopeText(topic, settings, kind = 'sentences') {
+    const options = topic.options.filter((opt) => inScope(opt, kind));
+    const values = scopeOf(topic, settings, kind);
+    const words = [partsText(topic, values, kind)];
     for (const opt of options) {
       if (opt.type === 'toggle' && values[opt.key]) words.push(`with ${opt.label.toLowerCase()}`);
       const choice = opt.type === 'radio' && opt.choices.find((c) => c.value === values[opt.key]);
@@ -70,5 +76,5 @@
     return words.join(' · ');
   }
 
-  return { choiceValues, fitSettings, settingsProblem, inScope, scopeChoices, scopeOf, sameScope, scopeText };
+  return { choiceValues, fitSettings, settingsProblem, inScope, scopeChoices, scopeOf, partGroups, partsText, scopeText };
 });

@@ -1,9 +1,12 @@
 // The daily exercises: which topics are marked learnt, when each came up, and two pseudo-topics: the Daily review, which
-// mixes sentences from every topic marked Sentences learnt, and Daily tables, which goes through every table marked
-// Table learnt — each in the scope saved with the mark (scope.js).
+// mixes sentences from every topic with parts ticked for Sentences, and Daily tables, which goes through every table
+// with parts ticked for Table — each with exactly the parts ticked, and the topic's saved settings for the rest.
 //
 // Kept between sessions (store.js):
-//   etudes-learnt: { [topicId]: { sentences?: { settings, since }, table?: { settings, since } } } — settings: the scope
+//   etudes-learnt: { [topicId]: { sentences?: { parts, since }, table?: { parts, since } } } — parts: { [key]: values },
+//     the choices of the kind's tick-box options ticked (scope.partGroups); {} for a topic without parts, where the mark
+//     itself is the whole-topic switch. A topic with parts keeps no mark without a tick. since: when first marked.
+//     An older mark holds settings instead of parts: the scope saved with it, read as its parts (partsOf) until changed.
 //   etudes-daily:  { sentences: { done: day, seen: { [topicId]: ms }, extra: { [topicId]: ms } }, table: { … } }
 //     — the same kinds (KINDS) in both
 //     done: the day the exercise was last finished; seen: when the Daily review last asked a topic's sentence, or Daily
@@ -37,14 +40,23 @@
 
   // ---------- Marks ----------
 
+  // A stored mark as { parts, since } (parts that are not lists dropped), an old one as { settings, since }, or null.
+  function readMark(mark) {
+    if (!isObject(mark) || !Number.isFinite(mark.since)) return null;
+    if (isObject(mark.parts)) {
+      return { parts: Object.fromEntries(Object.entries(mark.parts).filter(([, values]) => Array.isArray(values))), since: mark.since };
+    }
+    return isObject(mark.settings) ? { settings: mark.settings, since: mark.since } : null;
+  }
+
   function marks() {
     const saved = store.read(LEARNT_KEY, null);
     if (!isObject(saved)) return {};
     const result = {};
     for (const [id, own] of Object.entries(saved)) {
       if (!isObject(own)) continue;
-      const valid = KINDS.filter((kind) => isObject(own[kind]?.settings) && Number.isFinite(own[kind].since));
-      if (valid.length) result[id] = Object.fromEntries(valid.map((kind) => [kind, own[kind]]));
+      const valid = KINDS.map((kind) => [kind, readMark(own[kind])]).filter(([, mark]) => mark);
+      if (valid.length) result[id] = Object.fromEntries(valid);
     }
     return result;
   }
@@ -53,16 +65,63 @@
     return marks()[id]?.[kind] ?? null;
   }
 
-  // Marks a topic's sentences or table learnt with a scope, or (settings null) not learnt. A new scope keeps the day
-  // it was first marked.
-  function setMark(id, kind, settings, now = Date.now()) {
+  // Marks a topic's sentences or table learnt with the parts ticked ({ [key]: values }; {} for a topic without parts),
+  // or (parts null) not learnt. The mark keeps the day it was first made; an old one is replaced.
+  function setMark(id, kind, parts, now = Date.now()) {
     const all = marks();
     const own = { ...all[id] };
-    if (settings) own[kind] = { settings, since: own[kind]?.since ?? now };
+    if (parts) own[kind] = { parts, since: own[kind]?.since ?? now };
     else delete own[kind];
     if (Object.keys(own).length) all[id] = own;
     else delete all[id];
     store.write(LEARNT_KEY, all);
+  }
+
+  // The parts a mark ticks, { [key]: values } for each of the kind's tick-box options (scope.partGroups), in the
+  // choices' order; null without a mark. An old mark keeps its settings: they are fitted to the options offered now
+  // (a missing key: the default; a removed choice dropped; Präpositionen's table: the case groups), as they were used.
+  function partsOf(t, kind, mark) {
+    if (!mark) return null;
+    const ticked = mark.parts ?? scope.scopeOf(t, scope.fitSettings(t, mark.settings), kind);
+    return Object.fromEntries(scope.partGroups(t, kind).map((opt) => [opt.key,
+      scope.scopeChoices(opt, kind).filter((v) => ticked[opt.key]?.includes(v))]));
+  }
+
+  // Whether a mark's parts (partsOf) tick anything: for a topic without parts, whether there is a mark.
+  const ticksAny = (t, kind, parts) => !!parts && (!scope.partGroups(t, kind).length || Object.values(parts).some((values) => values.length));
+
+  // ---------- A topic's settings in the daily exercises ----------
+
+  const settingsKey = (t) => `etudes-settings-${t.id}`;
+
+  // The topic's settings as saved on its options screen, fitted to the options offered now.
+  const topicSettings = (t) => scope.fitSettings(t, store.read(settingsKey(t), {}));
+
+  // The settings a daily exercise uses for a topic: its saved ones (single choices and switches: hints, "with
+  // adjectives" …), with exactly the parts ticked for the kind; tick-box options the kind does not hold take their
+  // defaults (Artikelwörter's cases for the table).
+  function settingsFor(t, kind, parts, saved = topicSettings(t)) {
+    const result = { ...saved };
+    const groups = scope.partGroups(t, kind);
+    for (const opt of t.options) {
+      if (opt.type !== 'checkboxes') continue;
+      result[opt.key] = groups.includes(opt) ? scope.choiceValues(opt).filter((v) => parts[opt.key]?.includes(v)) : [...t.defaults[opt.key]];
+    }
+    return result;
+  }
+
+  // Where a topic's mark of a kind stands: { state, parts, settings, missing, problem }
+  //   state: 'none' (no mark, or nothing ticked); 'partly' (missing: the labels of the options with no part ticked;
+  //     problem: "tick at least one of …"); 'unfit' (problem: why the settings fail the topic's checks); 'learnt'
+  //   parts: partsOf; settings: settingsFor, once every option has a part ticked
+  function stateOf(t, kind, mark, saved) {
+    const parts = partsOf(t, kind, mark);
+    if (!ticksAny(t, kind, parts)) return { state: 'none', parts, settings: null, missing: [], problem: null };
+    const missing = scope.partGroups(t, kind).filter((opt) => !parts[opt.key].length).map((opt) => opt.label);
+    if (missing.length) return { state: 'partly', parts, settings: null, missing, problem: `tick at least one of ${missing.join(' and ')}` };
+    const settings = settingsFor(t, kind, parts, saved);
+    const problem = scope.settingsProblem(t, settings);
+    return { state: problem ? 'unfit' : 'learnt', parts, settings, missing, problem };
   }
 
   // ---------- Log ----------
@@ -153,34 +212,26 @@
 
   const dateText = (ms) => new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 
-  // The topics marked learnt for a kind that still offer it (t.sentences, t.table), in the registry's order.
-  const learntOf = (kind, topics, all = marks()) => topics.filter((t) => t[kind] && all[t.id]?.[kind]);
+  // The topics with a part ticked for a kind that still offer it (t.sentences, t.table), in the registry's order.
+  const learntOf = (kind, topics, all = marks()) => topics.filter((t) => t[kind] && ticksAny(t, kind, partsOf(t, kind, all[t.id]?.[kind])));
 
-  const UNFIT = 'its learnt settings no longer fit — open it and save them again';
-
-  // A mark's settings fitted to the options offered now, as its daily exercise uses them, and whether they still pass
-  // the topic's checks.
-  function fitMark(t, mark) {
-    const settings = scope.fitSettings(t, mark.settings);
-    return { settings, fits: !scope.settingsProblem(t, settings) };
-  }
-
-  // The learnt topics' marks of a kind, fitted (fitMark): ready, [{ topic, settings, since }], and a note on each whose
-  // settings no longer fit (leftOut).
+  // The learnt topics' marks of a kind (stateOf): ready, [{ topic, settings, since }], and a note on each only partly
+  // marked or whose settings fail the topic's checks (leftOut).
   function fitLearnt(kind, learnt, all) {
     const ready = [];
     const leftOut = [];
     for (const t of learnt) {
-      const { settings, fits } = fitMark(t, all[t.id][kind]);
-      if (fits) ready.push({ topic: t, settings, since: all[t.id][kind].since });
-      else leftOut.push(`${t.title}: ${UNFIT}.`);
+      const mark = all[t.id][kind];
+      const { state, settings, problem } = stateOf(t, kind, mark);
+      if (state === 'learnt') ready.push({ topic: t, settings, since: mark.since });
+      else leftOut.push(`${t.title}: ${state === 'partly' ? `left out until you ${problem} in Progress.` : problem}`);
     }
     return { ready, leftOut };
   }
 
   // ---------- The Daily review ----------
 
-  const NONE_LEARNT = 'No topic is marked learnt yet. Open a topic, choose the parts you know and turn on Sentences learnt.';
+  const NONE_LEARNT = 'No topic is marked learnt yet. Open Progress and tick the parts you know for Sentences.';
 
   // The Daily review as a topic the shell opens like any other. topics: the registry; clock: now in ms.
   function reviewTopic(topics, clock = Date.now) {
@@ -259,7 +310,7 @@
     const learnt = (all = marks()) => learntOf('table', topics, all);
     const titles = topics.filter((t) => t.table).map((t) => t.title);
     const open = titles.length > 1 ? `${titles.slice(0, -1).join(', ')} or ${titles.at(-1)}` : titles[0];
-    const noneLearnt = `No table is marked learnt yet. Open ${open} and turn on Table learnt on its options screen.`;
+    const noneLearnt = `No table is marked learnt yet. In Progress, tick Table for ${open}.`;
 
     // The learnt tables it can use, the least recently done first (never done: first of all; ties in the registry's
     // order), their scope fitted; and a note on each mark it cannot use: one whose topic is gone or no longer has a
@@ -317,8 +368,8 @@
   }
 
   return {
-    ROLLOVER_HOURS, LENGTHS, KINDS, UNFIT, dayOf,
-    marks, markOf, setMark, fitMark,
+    ROLLOVER_HOURS, LENGTHS, KINDS, dayOf,
+    marks, markOf, setMark, partsOf, settingsKey, topicSettings, settingsFor, stateOf,
     log, noteSeen, noteDone, doneToday,
     byLeastRecent, shares, shortWarning, interleave, reviewTopic, tablesTopic,
   };

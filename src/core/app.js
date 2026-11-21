@@ -33,11 +33,11 @@
   // The daily exercises, shown above the topics.
   const dailies = [daily.reviewTopic(topics), daily.tablesTopic(topics)];
 
-  // What a topic can be marked learnt for, in the daily exercises: a topic with sentences or a table (t[kind]). uses:
-  // how the note on another scope starts; name: the mark on the Progress screen.
+  // What a topic can be marked learnt for, in the daily exercises: a topic with sentences or a table (t[kind]). name: the
+  // mark on the Progress screen; label: it in a sentence ("learnt for the table"); exercise: the daily exercise it feeds.
   const LEARNT = [
-    { kind: 'sentences', name: 'Sentences', label: 'Sentences learnt', detail: 'comes up in the Daily review with these settings', uses: 'The Daily review uses' },
-    { kind: 'table', name: 'Table', label: 'Table learnt', detail: 'comes up in Daily tables with these settings', uses: 'Daily tables use' },
+    { kind: 'sentences', name: 'Sentences', label: 'sentences', exercise: 'the Daily review' },
+    { kind: 'table', name: 'Table', label: 'the table', exercise: 'Daily tables' },
   ];
 
   let screen = 'home';
@@ -54,16 +54,8 @@
 
   // ---------- Helpers ----------
 
-  function settingsKey(t) {
-    return `etudes-settings-${t.id}`;
-  }
-
-  function loadSettings(t) {
-    return scope.fitSettings(t, store.read(settingsKey(t), {}));
-  }
-
   function saveSettings() {
-    store.write(settingsKey(topic), settings);
+    store.write(daily.settingsKey(topic), settings);
   }
 
   function el(tag, className, text) {
@@ -192,28 +184,48 @@
 
   // ---------- Progress ----------
 
-  // Every topic with its marks and parts (progress.js), each ✓ where marked learnt. Read-only: a topic's line opens its
-  // options, where the marks are set. Rebuilt on every visit; a topic starts open when it has a mark.
-  function openProgress() {
-    const { learnt, total, marked, topics: items } = progress.tree(topics);
-    $('progress-count').textContent = `${learnt} of ${total} parts learnt · ${marked} of ${items.length} topics marked learnt`;
-    $('progress-tree').replaceChildren(...items.map(progressTopic));
+  // Where parts are marked learnt: every topic with its parts (progress.js), each with a Sentences and a Table box where
+  // that kind can hold it, and per kind a switch for the whole topic (the mark itself for a topic without parts). A
+  // change saves at once and rebuilds its topic. A topic starts open when it has a tick; opened or closed, it stays so
+  // for the visit. A topic's name opens its options.
+  let expanded = new Set(); // the topics open on this visit
+
+  // focusId: the topic to open, scroll to and focus (Edit in Progress); without it, the focus is on the first topic.
+  function openProgress(focusId = null) {
+    preparing = null; // from the options screen (Edit in Progress): a load finishing later must not focus it
+    const tree = progress.tree(topics);
+    expanded = new Set(tree.topics.filter((item) => item.open).map((item) => item.id));
+    if (focusId) expanded.add(focusId);
+    renderProgressCount(tree);
+    $('progress-tree').replaceChildren(...tree.topics.map(progressTopic));
     show('progress');
-    $('progress-tree').querySelector('.check-line').focus();
+    const title = focusId ? $(`progress-title-${focusId}`) : $('progress-tree').querySelector('.check-title');
+    if (focusId) $(`progress-topic-${focusId}`).scrollIntoView({ block: 'start' });
+    title.focus({ preventScroll: !!focusId });
   }
 
-  // A topic: a toggle showing or hiding its parts (a spacer without parts), its line, and its options' parts.
+  function renderProgressCount({ learnt, total, marked, topics: items }) {
+    $('progress-count').textContent = `${learnt} of ${total} parts learnt (ticked for either kind) · ${marked} of ${items.length} topics marked learnt`;
+  }
+
+  // A topic: a toggle showing or hiding its parts (a spacer without parts), its line (its name, a switch per kind, what
+  // keeps a mark out of its daily exercise) and its options' parts.
   function progressTopic(item) {
-    const line = el('button', 'check-line');
-    line.dataset.topic = item.id;
-    line.append(el('span', 'check-title', item.title), ...LEARNT.filter((l) => l.kind in item.marks).map((l) => progressMark(l, item.marks[l.kind])));
-    // Which mark no longer fits, where the topic has two.
-    const unfit = LEARNT.filter((l) => item.marks[l.kind] && !item.marks[l.kind].fits).map((l) => l.name);
-    const which = Object.keys(item.marks).length > 1 ? `${unfit.join(' and ')}: ` : '';
-    if (unfit.length) line.append(el('span', 'check-warn', which + daily.UNFIT));
-    line.addEventListener('click', () => openTopic(topics.find((t) => t.id === item.id), true));
+    const title = el('button', 'link check-title', item.title);
+    title.id = `progress-title-${item.id}`;
+    title.dataset.topic = item.id;
+    title.addEventListener('click', () => openTopic(topics.find((t) => t.id === item.id), true));
+    const kinds = LEARNT.filter((l) => l.kind in item.marks);
+    const line = el('div', 'check-line');
+    line.append(title, ...kinds.map((l) => progressSwitch(item, l)));
+    for (const { kind, name, exercise } of kinds) {
+      const { state, problem } = item.marks[kind];
+      const warn = state === 'partly' ? `Not in ${exercise} yet — ${problem}.` : problem;
+      if (warn) line.append(el('span', 'check-warn', kinds.length > 1 ? `${name}: ${warn}` : warn));
+    }
     const row = el('div', 'check-row');
     const li = el('li');
+    li.id = `progress-topic-${item.id}`;
     li.append(row);
     if (!item.options.length) {
       row.append(el('span', 'check-spacer'), line);
@@ -227,48 +239,89 @@
       options.hidden = !open;
       toggle.textContent = open ? '▾' : '▸';
       toggle.setAttribute('aria-expanded', String(open));
+      if (open) expanded.add(item.id);
+      else expanded.delete(item.id);
     };
     toggle.addEventListener('click', () => setOpen(options.hidden));
-    setOpen(item.open);
+    setOpen(expanded.has(item.id));
     row.append(toggle, line);
     li.append(options);
     return li;
   }
 
-  // A topic's options, each with its parts ✓ or ✗ (and, where the two marks disagree, which one holds it).
+  function checkbox(id, label, checked) {
+    const input = el('input');
+    input.type = 'checkbox';
+    input.id = id;
+    input.checked = checked;
+    input.setAttribute('aria-label', label);
+    return input;
+  }
+
+  // A topic's switch for a kind: with parts, checked when all are ticked, mixed when some are (a click ticks all, or
+  // clears all once all are ticked), with the count; without parts, the mark itself.
+  function progressSwitch(item, { kind, name, label }) {
+    const { state, ticked, total } = item.marks[kind];
+    const id = `progress-${item.id}-${kind}`;
+    const input = checkbox(id, total ? `${item.title}: all parts learnt for ${label}` : `${item.title} learnt for ${label}`,
+      total ? ticked === total : state !== 'none');
+    input.indeterminate = ticked > 0 && ticked < total;
+    input.addEventListener('change', () => onProgressChange(item.id, kind, id, (t) => progress.withAll(t, kind, input.checked)));
+    const count = el('span', 'check-count', total ? `${ticked}/${total}` : null); // empty, it keeps the switches in line
+    if (total) {
+      count.id = `${id}-count`;
+      input.setAttribute('aria-describedby', count.id);
+    }
+    const box = el('label', 'check-mark');
+    box.append(input, name, count);
+    return box;
+  }
+
+  // A topic's options, each a group of its parts: a box per kind that can hold the part, an empty cell where it cannot,
+  // so the columns line up under their heads.
   function progressParts(item) {
-    const options = el('ul', 'check-options');
-    options.id = `progress-parts-${item.id}`;
-    options.append(...item.options.map((opt) => {
+    const cols = LEARNT.filter((l) => item.marks[l.kind]?.total);
+    const box = el('div', `check-options${cols.length > 1 ? '' : ' single'}`);
+    box.id = `progress-parts-${item.id}`;
+    const head = el('div', 'check-cols');
+    head.setAttribute('aria-hidden', 'true');
+    head.append(...cols.map((l) => el('span', null, l.name)));
+    box.append(head);
+    for (const opt of item.options) {
+      const name = el('div', 'check-option', opt.label);
+      name.id = `progress-${item.id}-option-${opt.key}`;
       const parts = el('ul', 'check-parts');
+      parts.setAttribute('role', 'group');
+      parts.setAttribute('aria-labelledby', `progress-title-${item.id} ${name.id}`);
       parts.append(...opt.parts.map((part) => {
         const li = el('li', part.learnt ? 'check-part ok' : 'check-part');
-        li.append(tick(part.learnt, part.learnt ? 'Learnt' : 'Not yet'), ' ', part.label);
-        if (part.only) li.append(el('span', 'check-only', ` · ${part.only} only`));
+        for (const { kind, label } of cols) {
+          const cell = el('span', 'check-cell');
+          if (part[kind] !== null) {
+            const id = `progress-${item.id}-${kind}-${opt.key}-${part.value}`;
+            const input = checkbox(id, `${part.label} learnt for ${label}`, part[kind]);
+            input.addEventListener('change', () => onProgressChange(item.id, kind, id,
+              (t, mark) => progress.withPart(t, kind, mark, opt.key, part.value, input.checked)));
+            cell.append(input);
+          }
+          li.append(cell);
+        }
+        li.append(el('span', 'check-label', part.label));
         return li;
       }));
-      const li = el('li');
-      li.append(el('span', 'check-option', opt.label), parts);
-      return li;
-    }));
-    return options;
+      box.append(name, parts);
+    }
+    return box;
   }
 
-  // ✓ or ✗, named for screen readers.
-  function tick(on, label) {
-    const span = el('span', 'tick', on ? '✓' : '✗');
-    span.setAttribute('role', 'img');
-    span.setAttribute('aria-label', label);
-    return span;
-  }
-
-  // A topic's Sentences or Table mark; a table narrower than the whole names its scope. The tooltip gives the scope.
-  function progressMark({ kind, name, uses }, mark) {
-    const span = el('span', mark ? 'check-mark ok' : 'check-mark', `${name} `);
-    span.append(tick(!!mark, mark ? 'learnt' : 'not yet'));
-    if (mark && kind === 'table' && !mark.whole) span.append(` (${mark.text})`);
-    if (mark) span.title = `${uses}: ${mark.text}`;
-    return span;
+  // Saves a topic's mark of a kind as change(topic, mark) gives it, rebuilds the topic and the count, and puts the focus
+  // back on the control (controlId) that changed it.
+  function onProgressChange(id, kind, controlId, change) {
+    daily.setMark(id, kind, change(topics.find((t) => t.id === id), daily.markOf(id, kind)));
+    const tree = progress.tree(topics);
+    renderProgressCount(tree);
+    $(`progress-topic-${id}`).replaceWith(progressTopic(tree.topics.find((item) => item.id === id)));
+    $(controlId).focus();
   }
 
   // ---------- Options ----------
@@ -276,10 +329,10 @@
   // fresh: coming from the topic list, so the topic (re)loads its data; going back from a round keeps what is loaded.
   async function openTopic(t, fresh = false) {
     topic = t;
-    settings = loadSettings(t);
+    settings = daily.topicSettings(t);
     $('options-title').textContent = t.title;
     renderOptions();
-    renderLearnt();
+    renderMarks();
     renderSessionButtons();
     show('options');
     if (fresh) {
@@ -318,34 +371,64 @@
     $('options-listing').hidden = !rows.length;
   }
 
-  // The Sentences learnt and Table learnt switches (topics with sentences, a table): on, each saves its part of the
-  // settings (scope.js) for its daily exercise. The scope changes only on purpose: while it differs from the settings,
-  // a note says which one is used.
-  function renderLearnt() {
-    const box = $('options-learnt');
+  // The quick buttons that tick the parts for the next round (progress.practise), and their tooltip when there is
+  // nothing to tick.
+  const PRACTISE = [
+    { which: 'new', label: 'Practise what\'s new', none: 'Everything here is marked learnt' },
+    { which: 'learnt', label: 'Practise what\'s learnt', none: 'Nothing here is marked learnt yet — mark parts in Progress' },
+  ];
+
+  // What a topic is marked learnt for, a line per kind it offers (topics with sentences, a table), with a link to
+  // Progress, where the marks are set; for a topic with parts, the quick buttons. Hidden on the daily exercises.
+  function renderMarks() {
+    const box = $('options-marks');
     const kinds = LEARNT.filter((l) => topic[l.kind]);
     box.hidden = !kinds.length;
-    box.replaceChildren(el('legend', null, 'Daily exercises'));
-    const own = daily.marks()[topic.id];
-    for (const { kind, label, detail, uses } of kinds) {
-      const mark = own?.[kind];
-      const name = `learnt-${kind}`;
-      const setMark = (on) => {
-        daily.setMark(topic.id, kind, on ? scope.scopeOf(topic, settings, kind) : null);
-        renderLearnt();
-        validateOptions();
-        box.querySelector(`input[name="${name}"]`).focus(); // the re-render dropped the focused control
-      };
-      box.append(choiceLabel('checkbox', name, { label, detail }, !!mark, (e) => setMark(e.target.checked)));
-      if (mark && !scope.sameScope(topic, mark.settings, settings, kind)) {
-        const note = el('p', 'learnt-note', `${uses}: ${scope.scopeText(topic, scope.fitSettings(topic, mark.settings), kind)}.`);
-        const use = el('button', null, 'Use these settings');
-        use.type = 'button';
-        use.addEventListener('click', () => setMark(true));
-        note.append(use);
-        box.append(note);
-      }
+    if (!kinds.length) return void box.replaceChildren();
+    const all = daily.marks();
+    const [item] = progress.tree([topic], all, () => settings).topics;
+    const lines = kinds.map((l) => {
+      const { text, warn } = markText(l, item.marks[l.kind]);
+      return el('p', warn ? 'marks-line warn' : 'marks-line', text);
+    });
+    const actions = el('div', 'marks-actions');
+    if (item.options.length) {
+      actions.append(...PRACTISE.map(({ which, label, none }) => {
+        const button = el('button', null, label);
+        button.id = `options-practise-${which}`;
+        button.disabled = !progress.practise(topic, which, all);
+        if (button.disabled) button.title = none;
+        button.addEventListener('click', () => practise(which));
+        return button;
+      }));
     }
+    const edit = el('button', 'link', 'Edit in Progress →');
+    edit.addEventListener('click', () => openProgress(topic.id));
+    actions.append(edit);
+    box.replaceChildren(...lines, actions);
+  }
+
+  // A kind's mark (progress.tree's, with the settings shown) in words; warn: it keeps the topic out of its daily exercise.
+  function markText({ label, exercise }, { state, total, text: parts, problem }) {
+    const text = total ? `: ${parts}` : '';
+    if (state === 'none') return { text: `Not learnt for ${label} yet` };
+    if (state === 'partly') return { text: `Partly learnt for ${label}${text} — not in ${exercise} until you ${problem}`, warn: true };
+    if (state === 'unfit') return { text: `Learnt for ${label}, but: ${problem}`, warn: true };
+    return { text: `Learnt for ${label}${text}` };
+  }
+
+  // Ticks the parts not learnt yet (which: 'new') or those learnt ('learnt') for the next round. A combination the
+  // topic cannot practise is ticked all the same; the error says why, and Start waits.
+  function practise(which) {
+    const preset = progress.practise(topic, which);
+    if (!preset) return;
+    settings = { ...settings, ...preset };
+    saveSettings();
+    renderOptions();
+    if (!preparing) renderIntro();
+    renderMarks();
+    validateOptions();
+    $(`options-practise-${which}`).focus(); // the re-render dropped the focused button
   }
 
   function choiceLabel(type, name, choice, checked, onChange) {
@@ -404,18 +487,16 @@
     settings[key] = value;
     saveSettings();
     if (!preparing) renderIntro();
-    renderLearnt();
+    renderMarks(); // a mark's status depends on the single choices and switches too
     validateOptions();
   }
 
-  // Shows the first problem with the settings (or the topic's data) and disables the start buttons, and marking them
-  // learnt (a mark can still be removed), while there is one.
+  // Shows the first problem with the settings (or the topic's data) and disables the start buttons while there is one.
   function validateOptions() {
     const error = preparing ? null : prepareError || scope.settingsProblem(topic, settings);
     $('options-error').textContent = error || '';
     $('options-error').hidden = !error;
     for (const button of $('options-actions').querySelectorAll('button')) button.disabled = !!error || preparing;
-    for (const control of $('options-learnt').querySelectorAll('input:not(:checked), button')) control.disabled = !!error || !!preparing;
     return !error && !preparing;
   }
 
@@ -770,7 +851,7 @@
     if (!speakingOn) stopSpeaking();
   });
   for (const button of document.querySelectorAll('.to-topics')) button.addEventListener('click', goHome);
-  $('btn-progress').addEventListener('click', openProgress);
+  $('btn-progress').addEventListener('click', () => openProgress());
   $('btn-check').addEventListener('click', checkItem);
   $('btn-next').addEventListener('click', nextItem);
   $('btn-quit').addEventListener('click', () => openTopic(topic));

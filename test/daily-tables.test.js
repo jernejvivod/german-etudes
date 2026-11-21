@@ -86,11 +86,7 @@ test('the table scope: the options marked table, the rest left to the defaults',
   assert.deepEqual(S.scopeOf(byId.nominal, byId.nominal.defaults, 'table'), {});
   // The sentences scope as before.
   assert.deepEqual(Object.keys(S.scopeOf(determiners, determiners.defaults)), ['families', 'cases', 'hints']);
-
-  assert.ok(S.sameScope(determiners, { ...determiners.defaults, cases: ['nom'], hints: true }, determiners.defaults, 'table'));
-  assert.ok(!S.sameScope(determiners, { ...determiners.defaults, cases: ['nom'] }, determiners.defaults));
-  assert.ok(!S.sameScope(determiners, { families: ['ein'] }, determiners.defaults, 'table'));
-  assert.ok(S.sameScope(adjectives, { degrees: ['comp'], mode: 'full' }, adjectives.defaults, 'table'));
+  assert.deepEqual(S.scopeOf(determiners, { ...determiners.defaults, cases: ['nom'], hints: true }, 'table'), { families: ['der', 'ein'] });
 
   assert.equal(S.scopeText(determiners, { ...determiners.defaults, families: ['ein'] }, 'table'), 'ein-words');
   assert.equal(S.scopeText(determiners, determiners.defaults, 'table'), 'the whole table');
@@ -108,7 +104,8 @@ test('Präpositionen\'s table scope holds only the groups with a case of their o
   assert.equal(text(prepositions.defaults.groups), 'Akkusativ, Dativ, Wechselpräpositionen');
   assert.equal(text(['fixed']), 'the whole table');
   assert.equal(text(['akk', 'dat', 'wechsel', 'gen', 'fixed', 'da']), 'the whole table');
-  assert.ok(S.sameScope(prepositions, { groups: ['akk', 'fixed'] }, { ...prepositions.defaults, groups: ['akk'] }, 'table'));
+  // Its parts: the groups with a case.
+  assert.deepEqual(S.partGroups(prepositions, 'table').map((o) => S.scopeChoices(o, 'table')), [['akk', 'dat', 'wechsel', 'gen']]);
   // A stored scope builds the same table.
   const stored = S.fitSettings(prepositions, scopeOf(['akk', 'da']));
   assert.deepEqual(prepositions.table(stored, mulberry32(2)), prepositions.table({ ...prepositions.defaults, groups: ['akk', 'da'] }, mulberry32(2)));
@@ -121,9 +118,9 @@ test('Daily tables with no table learnt explains how to mark one; a Sentences le
   const tables = D.tablesTopic(TOPICS);
   assert.equal(tables.id, 'daily-tables');
   assert.equal(tables.kind, 'table');
-  const none = 'No table is marked learnt yet. Open Adjektivendungen, Passiv, Präpositionen, Artikelwörter, Pronomen or Nominalisierung and turn on Table learnt on its options screen.';
+  const none = 'No table is marked learnt yet. In Progress, tick Table for Adjektivendungen, Passiv, Präpositionen, Artikelwörter, Pronomen or Nominalisierung.';
   assert.equal(tables.validate({}), none);
-  D.setMark('passive', 'sentences', { kinds: ['werden'] });
+  D.setMark('passive', 'sentences', { kinds: ['werden'], tenses: ['praes'] });
   assert.equal(tables.validate({}), none);
   assert.deepEqual(tables.learnt(), []);
   assert.deepEqual(tables.listing({}), []);
@@ -162,13 +159,17 @@ test('Daily tables leaves out the marks it cannot use and says why', () => {
   D.setMark('gone', 'table', {});
   D.setMark('verbforms', 'table', {});
   D.setMark('passive', 'table', { kinds: ['sein'], tenses: ['perf'] });
+  D.setMark('determiners', 'table', { cases: ['nom'] }); // no part of the table: not marked
+  D.setMark('pronouns', 'table', { kinds: [] });
   const tables = D.tablesTopic(TOPICS);
   assert.equal(tables.intro({}), 'Write out every table you have marked learnt from memory, the least recently done first. '
     + 'gone: there is no such table any more. '
     + 'Verbformen: there is no such table any more. '
-    + 'Passiv: its learnt settings no longer fit — open it and save them again.');
+    + 'Passiv: Zustandspassiv is practised in Präsens, Präteritum, Futur I only — tick one of those tenses or untick it.');
   assert.equal(tables.validate({}), 'None of the learnt tables can be used — see above.');
   assert.deepEqual(tables.listing({}), []);
+  D.setMark('passive', 'table', { tenses: ['perf'] });
+  assert.match(tables.intro({}), / Passiv: left out until you tick at least one of Kind of passive in Progress\.$/);
   D.setMark('pronouns', 'table', { kinds: ['relative'] });
   assert.equal(tables.validate({}), null);
   assert.deepEqual(tables.sessions[0].build({}).map((s) => s.topicTitle), ['Pronomen']);
@@ -210,7 +211,35 @@ test('Daily tables notes each table seen at its first check, and done once every
   assert.ok(D.doneToday('table', now));
 });
 
+test('Daily tables: exactly the parts ticked, the rest from the saved settings or the defaults', () => {
+  fresh();
+  // Artikelwörter's table with no case saved on its options screen: the cases are not the table's, so it still fits.
+  store.write('etudes-settings-determiners', { ...determiners.defaults, cases: [] });
+  D.setMark('determiners', 'table', { families: ['ein'] });
+  // Präpositionen's table: its case groups.
+  D.setMark('prepositions', 'table', { groups: ['dat', 'gen'] });
+  const tables = D.tablesTopic(TOPICS);
+  assert.equal(tables.validate({}), null);
+  assert.deepEqual(tables.listing({}).map((row) => row.text.split(' · learnt')[0]), ['Dativ, Genitiv', 'ein-words']);
+  const [prep, det] = tables.sessions[0].build({}, mulberry32(4));
+  assert.deepEqual(det.table.blocks.map((b) => b.title), ['ein-words']);
+  assert.deepEqual(prep.table, prepositions.table({ ...prepositions.defaults, groups: ['dat', 'gen'] }, mulberry32(4)).table);
+});
+
+test('an old table mark (its settings) builds the same table as before', () => {
+  const storage = fakeStorage();
+  const old = { kinds: ['werden', 'sein'], tenses: ['praes', 'praet'], length: 20 };
+  const since = at(2, 10);
+  storage.setItem('etudes-learnt', JSON.stringify({ passive: { table: { settings: old, since } }, prepositions: { table: { settings: { groups: ['akk', 'fixed'] }, since } } }));
+  store.use(storage);
+  const tables = D.tablesTopic(TOPICS);
+  assert.deepEqual(tables.listing({}).map((row) => row.text), ['Vorgangspassiv, Zustandspassiv · Präsens, Präteritum · learnt 2 Nov', 'Akkusativ · learnt 2 Nov']);
+  const steps = tables.sessions[0].build({}, mulberry32(2));
+  assert.deepEqual(steps[0].table, passive.table(S.fitSettings(passive, old), mulberry32(2)).table);
+  assert.deepEqual(steps[1].table, prepositions.table({ ...prepositions.defaults, groups: ['akk', 'fixed'] }, mulberry32(2)).table);
+});
+
 test('Daily tables with a single table topic names it alone', () => {
   fresh();
-  assert.equal(D.tablesTopic([passive]).validate({}), 'No table is marked learnt yet. Open Passiv and turn on Table learnt on its options screen.');
+  assert.equal(D.tablesTopic([passive]).validate({}), 'No table is marked learnt yet. In Progress, tick Table for Passiv.');
 });

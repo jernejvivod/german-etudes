@@ -64,29 +64,109 @@ test('interleave keeps every item and, where possible, no two neighbours from on
   assert.deepEqual(D.interleave([[1, 2], [3, 4]], () => 0).length, 4);
 });
 
-test('marks: set, keep the first day on a new scope, remove; garbage reads as none', () => {
+test('marks: the ticked parts, set, keeping the first day, removed', () => {
   const storage = fresh();
   assert.deepEqual(D.marks(), {});
-  D.setMark('passive', 'sentences', { tenses: ['praes'] }, 1000);
+  D.setMark('passive', 'sentences', { kinds: ['werden'], tenses: ['praes'] }, 1000);
   D.setMark('passive', 'table', { kinds: ['werden'] }, 2000);
-  D.setMark('passive', 'sentences', { tenses: ['praes', 'praet'] }, 3000);
-  assert.deepEqual(D.markOf('passive', 'sentences'), { settings: { tenses: ['praes', 'praet'] }, since: 1000 });
+  D.setMark('passive', 'sentences', { kinds: ['werden'], tenses: ['praes', 'praet'] }, 3000);
+  D.setMark('fvg', 'sentences', {}, 4000);
+  assert.deepEqual(D.markOf('passive', 'sentences'), { parts: { kinds: ['werden'], tenses: ['praes', 'praet'] }, since: 1000 });
   assert.deepEqual(JSON.parse(storage.data.get('etudes-learnt')), {
-    passive: { sentences: { settings: { tenses: ['praes', 'praet'] }, since: 1000 }, table: { settings: { kinds: ['werden'] }, since: 2000 } },
+    passive: { sentences: { parts: { kinds: ['werden'], tenses: ['praes', 'praet'] }, since: 1000 }, table: { parts: { kinds: ['werden'] }, since: 2000 } },
+    fvg: { sentences: { parts: {}, since: 4000 } },
   });
   D.setMark('passive', 'sentences', null);
   assert.equal(D.markOf('passive', 'sentences'), null);
   D.setMark('passive', 'table', null);
+  D.setMark('fvg', 'sentences', null);
   assert.deepEqual(JSON.parse(storage.data.get('etudes-learnt')), {});
+});
 
-  for (const junk of ['[1]', '"x"', '{"a":3,"b":{"sentences":{"settings":1,"since":2}},"c":{"sentences":{"settings":{},"since":"x"}}}', '{bad']) {
+test('marks: old ones (settings) and new ones (parts) side by side; an old one is replaced, keeping its day', () => {
+  const storage = fresh();
+  storage.data.set('etudes-learnt', JSON.stringify({
+    passive: { sentences: { settings: { kinds: ['werden'], tenses: ['praes'], length: 20 }, since: 5 }, table: { parts: { kinds: ['werden'], tenses: 'x', other: 1 }, since: 6 } },
+  }));
+  store.use(storage);
+  assert.deepEqual(D.marks(), {
+    passive: { sentences: { settings: { kinds: ['werden'], tenses: ['praes'], length: 20 }, since: 5 }, table: { parts: { kinds: ['werden'] }, since: 6 } },
+  }, 'parts that are not lists dropped');
+  D.setMark('passive', 'sentences', { kinds: ['werden'], tenses: ['praes', 'praet'] }, 9000);
+  assert.deepEqual(JSON.parse(storage.data.get('etudes-learnt')).passive.sentences, { parts: { kinds: ['werden'], tenses: ['praes', 'praet'] }, since: 5 });
+});
+
+test('marks: garbage reads as none', () => {
+  const storage = fresh();
+  const junks = ['[1]', '"x"', '{bad', '{"a":3,"b":{"sentences":{"settings":1,"since":2}},"c":{"sentences":{"settings":{},"since":"x"}}}',
+    '{"a":{"sentences":{"parts":[1],"since":2}},"b":{"table":{"parts":{},"since":null}},"c":{"sentences":{"since":3}}}'];
+  for (const junk of junks) {
     storage.data.set('etudes-learnt', junk);
     store.use(storage);
     assert.deepEqual(D.marks(), {}, junk);
   }
-  storage.data.set('etudes-learnt', '{"a":{"sentences":{"settings":{},"since":5},"other":1}}');
+  storage.data.set('etudes-learnt', '{"a":{"sentences":{"settings":{},"since":5},"other":1},"b":{"table":{"parts":{},"since":6}}}');
   store.use(storage);
-  assert.deepEqual(D.marks(), { a: { sentences: { settings: {}, since: 5 } } });
+  assert.deepEqual(D.marks(), { a: { sentences: { settings: {}, since: 5 } }, b: { table: { parts: {}, since: 6 } } });
+});
+
+test('partsOf: the parts a mark ticks, an old one\'s settings read as the daily exercise used them', () => {
+  const passive = require('../src/topics/passive.js');
+  const prepositions = require('../src/topics/prepositions.js');
+  const determiners = require('../src/topics/determiners.js');
+  const fvg = require('../src/topics/fvg.js');
+  assert.equal(D.partsOf(passive, 'sentences', null), null);
+  // New: in the choices' order, unknown choices and options dropped, a missing option empty.
+  assert.deepEqual(D.partsOf(passive, 'sentences', { parts: { tenses: ['praet', 'gone', 'praes'], other: ['x'] }, since: 1 }),
+    { kinds: [], tenses: ['praes', 'praet'] });
+  // Old: a missing key is its default, a removed choice dropped, switches and round options not parts.
+  assert.deepEqual(D.partsOf(passive, 'sentences', { settings: { tenses: ['fut', 'gone'], length: 20 }, since: 1 }),
+    { kinds: ['werden'], tenses: ['fut'] });
+  assert.deepEqual(D.partsOf(determiners, 'table', { settings: { families: ['ein'], cases: ['nom'] }, since: 1 }), { families: ['ein'] });
+  assert.deepEqual(D.partsOf(determiners, 'sentences', { settings: { families: ['ein'], hints: true }, since: 1 }),
+    { families: ['ein'], cases: ['nom', 'acc', 'dat', 'gen'] });
+  // Präpositionen's old table: the case groups it held.
+  assert.deepEqual(D.partsOf(prepositions, 'table', { settings: { groups: ['akk', 'fixed'] }, since: 1 }), { groups: ['akk'] });
+  assert.deepEqual(D.partsOf(prepositions, 'table', { settings: { groups: ['fixed'] }, since: 1 }), { groups: ['akk', 'dat', 'wechsel', 'gen'] });
+  assert.deepEqual(D.partsOf(prepositions, 'table', { parts: { groups: ['akk', 'fixed'] }, since: 1 }), { groups: ['akk'] });
+  assert.deepEqual(D.partsOf(fvg, 'sentences', { settings: { vocab: 'builtin' }, since: 1 }), {});
+});
+
+test('settingsFor: the ticked parts, the saved switches and choices, the other tick-box options\' defaults', () => {
+  fresh();
+  const prepositions = require('../src/topics/prepositions.js');
+  const determiners = require('../src/topics/determiners.js');
+  const saved = { ...prepositions.defaults, hints: true, adjectives: false, length: 20, vocab: 'builtin' };
+  assert.deepEqual(D.settingsFor(prepositions, 'sentences', { groups: ['dat', 'akk'] }, saved),
+    { groups: ['akk', 'dat'], adjectives: false, hints: true, length: 20, vocab: 'builtin' });
+  // Artikelwörter's table: the cases are not its parts, so even saved without any they are the defaults.
+  assert.deepEqual(D.settingsFor(determiners, 'table', { families: ['ein'] }, { ...determiners.defaults, cases: [], hints: true }),
+    { ...determiners.defaults, families: ['ein'], hints: true });
+  // By default the settings saved on the topic's options screen.
+  store.write('etudes-settings-prepositions', { hints: true, groups: ['gen'] });
+  assert.deepEqual(D.settingsFor(prepositions, 'sentences', { groups: ['akk'] }), { ...prepositions.defaults, groups: ['akk'], hints: true });
+  assert.equal(D.settingsKey(prepositions), 'etudes-settings-prepositions');
+  assert.deepEqual(D.topicSettings(prepositions), { ...prepositions.defaults, hints: true, groups: ['gen'] });
+});
+
+test('stateOf: none, partly, unfit, learnt', () => {
+  fresh();
+  const passive = require('../src/topics/passive.js');
+  const fvg = require('../src/topics/fvg.js');
+  const state = (t, parts, kind = 'sentences') => D.stateOf(t, kind, parts && { parts, since: 1 }, t.defaults);
+  assert.deepEqual(state(passive, null), { state: 'none', parts: null, settings: null, missing: [], problem: null });
+  assert.equal(state(passive, { kinds: [], tenses: [] }).state, 'none', 'nothing ticked');
+  assert.deepEqual(state(passive, { tenses: ['praes', 'praet'] }),
+    { state: 'partly', parts: { kinds: [], tenses: ['praes', 'praet'] }, settings: null, missing: ['Kind of passive'], problem: 'tick at least one of Kind of passive' });
+  const unfit = state(passive, { kinds: ['sein'], tenses: ['perf'] });
+  assert.equal(unfit.state, 'unfit');
+  assert.match(unfit.problem, /^Zustandspassiv is practised in Präsens, Präteritum, Futur I only/);
+  assert.deepEqual(state(passive, { kinds: ['werden'], tenses: ['praes'] }, 'table'), {
+    state: 'learnt', parts: { kinds: ['werden'], tenses: ['praes'] }, settings: { ...passive.defaults, tenses: ['praes'] }, missing: [], problem: null,
+  });
+  // A topic without parts: the mark is the switch.
+  assert.equal(state(fvg, null).state, 'none');
+  assert.deepEqual(state(fvg, {}), { state: 'learnt', parts: {}, settings: fvg.defaults, missing: [], problem: null });
 });
 
 test('the log: seen, done and extra by kind; done counts until the next 4:00; garbage reads as none', () => {
@@ -167,7 +247,7 @@ test('the Daily review with nothing learnt explains how to mark a topic', async 
   fresh();
   const review = D.reviewTopic([stub('a'), stub('b')]);
   assert.equal(await review.prepare(), null);
-  assert.equal(review.validate(review.defaults), 'No topic is marked learnt yet. Open a topic, choose the parts you know and turn on Sentences learnt.');
+  assert.equal(review.validate(review.defaults), 'No topic is marked learnt yet. Open Progress and tick the parts you know for Sentences.');
   assert.deepEqual(review.listing(review.defaults), []);
   assert.equal(review.learnt().length, 0);
   assert.equal(review.kind, 'sentences');
@@ -189,20 +269,25 @@ test('the Daily review loads each loader once, in turn, and leaves out the topic
     events.push('deck end');
     return 'Anki is not there.';
   };
+  const d = stub('d', { defaults: { parts: ['a'], more: ['x'], hints: false, length: 10 } });
+  d.options = [...d.options, { key: 'more', label: 'More', type: 'checkboxes', min: 1, choices: [{ value: 'x', label: 'X' }] }];
   const topics = [
     stub('a', { prepare: vocabLoad }),
     stub('b', { prepare: vocabLoad }),
     stub('c', { prepare: deckLoad }),
-    stub('d'),
+    d,
     stub('e', { validate: (s) => (s.hints ? 'No hints here.' : null) }),
     stub('f', { sentences: undefined }),
+    stub('g'),
   ];
-  D.setMark('a', 'sentences', { parts: ['a'], hints: false }, at(3, 10));
+  D.setMark('a', 'sentences', { parts: ['a'] }, at(3, 10));
   D.setMark('b', 'sentences', { parts: ['a', 'b'] }, at(4, 10));
   D.setMark('c', 'sentences', { parts: ['a'] }, at(5, 10));
-  D.setMark('d', 'sentences', { parts: ['gone'] }, at(6, 10));
-  D.setMark('e', 'sentences', { hints: true }, at(7, 10));
-  D.setMark('f', 'sentences', {}, at(7, 10));
+  D.setMark('d', 'sentences', { parts: ['a'] }, at(6, 10)); // nothing More
+  D.setMark('e', 'sentences', { parts: ['a'] }, at(7, 10));
+  store.write('etudes-settings-e', { hints: true });
+  D.setMark('f', 'sentences', { parts: ['a'] }, at(7, 10));
+  D.setMark('g', 'sentences', { parts: ['gone'] }, at(7, 10)); // no part ticked any more
   D.setMark('gone', 'sentences', {}, at(7, 10));
   const review = D.reviewTopic(topics);
   assert.deepEqual(review.learnt().map((t) => t.id), ['a', 'b', 'c', 'd', 'e']);
@@ -216,8 +301,8 @@ test('the Daily review loads each loader once, in turn, and leaves out the topic
   ]);
   assert.equal(review.intro({ length: 10 }), 'Every learnt topic comes up today, in equal shares, mixed. '
     + 'C: Anki is not there. '
-    + 'D: its learnt settings no longer fit — open it and save them again. '
-    + 'E: its learnt settings no longer fit — open it and save them again.');
+    + 'D: left out until you tick at least one of More in Progress. '
+    + 'E: No hints here.');
 
   // Every learnt topic left out: Start stays off.
   fresh();
@@ -233,9 +318,12 @@ test('the Daily review: shares per topic, mixed, each item with its topic, hint 
   const b = stub('b', { defaults: { parts: ['a'], hints: false, length: 10, vocab: 'builtin' } });
   b.options = [...b.options, vocabOption];
   const c = stub('c');
-  D.setMark('a', 'sentences', { parts: ['a', 'b'], hints: true }, at(1, 10));
-  D.setMark('b', 'sentences', { parts: ['b'], hints: false, vocab: 'builtin' }, at(1, 10));
-  D.setMark('c', 'sentences', { parts: ['a'], hints: false }, at(1, 10));
+  D.setMark('a', 'sentences', { parts: ['a', 'b'] }, at(1, 10));
+  D.setMark('b', 'sentences', { parts: ['b'] }, at(1, 10));
+  D.setMark('c', 'sentences', { parts: ['a'] }, at(1, 10));
+  // The saved settings give the switches and choices, the mark exactly its parts.
+  store.write('etudes-settings-a', { parts: ['b'], hints: true, length: 10 });
+  store.write('etudes-settings-b', { parts: ['a'], vocab: 'builtin' });
   let now = at(21, 12);
   const review = D.reviewTopic([a, b, c], () => now);
   await review.prepare();
@@ -278,8 +366,8 @@ test('the Daily review is shorter where a topic gives fewer sentences', async ()
   const few = stub('few');
   const own = few.sentences;
   few.sentences = (s, n, rnd) => ({ ...own(s, n, rnd), items: own(s, n, rnd).items.slice(0, 1) });
-  D.setMark('a', 'sentences', {});
-  D.setMark('few', 'sentences', {});
+  D.setMark('a', 'sentences', { parts: ['a'] });
+  D.setMark('few', 'sentences', { parts: ['a'] });
   const review = D.reviewTopic([stub('a'), few]);
   await review.prepare();
   const [step] = review.sessions[0].build({ length: 10 }, mulberry32(1));
