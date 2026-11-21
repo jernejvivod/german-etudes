@@ -329,7 +329,7 @@
   let error = null;
   let stamp = null; // the deck version last loaded (collection file times and day); unchanged decks are not resent
   let unknownHeadings = []; // headings of learnt nouns that neither heading list knows
-  let nominals = []; // learnt nominalised adjectives ("der / die Verwandte"), as their capitalized stem: "Verwandt"
+  let nominals = []; // learnt nominalised adjectives ("der / die Verwandte"): [{ stem: 'Verwandt', note }], one per stem
   let learntWords = new Map(); // a learnt card's word (its first form, a verb's infinitive) → its note, see noteFor
 
   function useNotes(list) {
@@ -353,9 +353,14 @@
     cards.forEach((note, i) => learn(parsed[i].sg, note));
     const cardVerbs = new Map(deckVerbs.map((x) => [x.note, x.verb]));
     for (const note of cards) if (cardVerbs.has(note)) learn(cardVerbs.get(note).inf, note);
-    nominals = [...new Set(parsed
-      .filter((w) => /\bm[/-]f\b/.test(w.pos) && /^[A-ZÄÖÜ][a-zäöüß]+e$/.test(w.sg) && w.alts.some(([alt, g]) => alt === w.sg && g === 'f'))
-      .map((w) => w.sg.slice(0, -1)))];
+    // One entry per stem, with its first card, as for learntWords.
+    const stems = new Map();
+    parsed.forEach((w, i) => {
+      if (!/\bm[/-]f\b/.test(w.pos) || !/^[A-ZÄÖÜ][a-zäöüß]+e$/.test(w.sg) || !w.alts.some(([alt, g]) => alt === w.sg && g === 'f')) return;
+      const stem = w.sg.slice(0, -1);
+      if (!stems.has(stem)) stems.set(stem, { stem, note: cards[i] });
+    });
+    nominals = [...stems.values()];
   }
 
   // The hardest cards first: most lapses, then lowest ease, then soonest due. The order of lists only — which cards a
