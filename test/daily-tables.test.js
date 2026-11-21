@@ -202,4 +202,15 @@ test('Daily tables notes each table seen at its first check, and done once every
   again.onChecked({ correct: 0, total: 6 });
   assert.equal(D.log('table').seen.passive, at(22, 9));
   assert.ok(!D.doneToday('table', now));
+
+  // Left after the first table: the next round starts with the other one, and checking it finishes the day.
+  const [rest] = tables.sessions[0].build({}, mulberry32(1));
+  assert.equal(rest.topicTitle, 'Artikelwörter');
+  rest.onChecked({ correct: 16, total: 16 });
+  assert.ok(D.doneToday('table', now));
+});
+
+test('Daily tables with a single table topic names it alone', () => {
+  fresh();
+  assert.equal(D.tablesTopic([passive]).validate({}), 'No table is marked learnt yet. Open Passiv and turn on Table learnt on its options screen.');
 });

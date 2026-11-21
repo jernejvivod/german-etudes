@@ -244,11 +244,13 @@
   // ---------- Daily tables ----------
 
   // Every learnt table as a topic the shell opens like any other, one table step each. topics: the registry; clock: now
-  // in ms. Done for the day once each table has been checked (not necessarily without mistakes).
+  // in ms. Done for the day once each table has been checked that day (not necessarily without mistakes), in one round
+  // or over several.
   function tablesTopic(topics, clock = Date.now) {
     const learnt = (all = marks()) => learntOf('table', topics, all);
     const titles = topics.filter((t) => t.table).map((t) => t.title);
-    const noneLearnt = `No table is marked learnt yet. Open ${titles.slice(0, -1).join(', ')} or ${titles.at(-1)} and turn on Table learnt on its options screen.`;
+    const open = titles.length > 1 ? `${titles.slice(0, -1).join(', ')} or ${titles.at(-1)}` : titles[0];
+    const noneLearnt = `No table is marked learnt yet. Open ${open} and turn on Table learnt on its options screen.`;
 
     // The learnt tables it can use, the least recently done first (never done: first of all; ties in the registry's
     // order), their scope fitted; and a note on each mark it cannot use: one whose topic is gone or no longer has a
@@ -265,7 +267,8 @@
 
     function build(settings, rnd = Math.random) {
       const checked = new Set(); // the topics whose table was checked in this round
-      const steps = usable().ready.map(({ topic: t, settings: own }) => {
+      const { ready } = usable();
+      return ready.map(({ topic: t, settings: own }) => {
         const step = t.table(own, rnd);
         return {
           ...step,
@@ -274,12 +277,13 @@
           onChecked: () => {
             if (checked.has(t.id)) return; // a retry
             checked.add(t.id);
-            noteSeen('table', t.id, clock());
-            if (checked.size === steps.length) noteDone('table', [], clock());
+            const now = clock();
+            noteSeen('table', t.id, now);
+            const { seen } = log('table');
+            if (ready.every(({ topic }) => topic.id in seen && dayOf(seen[topic.id]) === dayOf(now))) noteDone('table', [], now);
           },
         };
       });
-      return steps;
     }
 
     return {
