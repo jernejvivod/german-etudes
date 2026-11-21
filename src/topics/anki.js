@@ -290,6 +290,17 @@
     return { due: due.length, usable: usable(due).length };
   }
 
+  // Up to n sentences of due cards (fewer when fewer have one), for a round here and for the Daily review.
+  function sentences(settings, n, rnd = Math.random) {
+    return {
+      type: 'drill',
+      label: 'Sentences',
+      hint: 'Tab moves between gaps · endings of article words and adjectives · leave a gap empty (or type -) for no ending',
+      hideTags: !settings.hints,
+      items: buildRound({ ...settings, length: n }, rnd),
+    };
+  }
+
   return {
     id: 'anki',
     title: 'Anki-Sätze',
@@ -309,7 +320,7 @@
         ],
       },
       {
-        key: 'length', label: 'Round', type: 'radio', inline: true, choices: [
+        key: 'length', label: 'Round', type: 'radio', inline: true, round: true, choices: [
           { value: 10, label: '10 sentences' },
           { value: 20, label: '20 sentences' },
         ],
@@ -321,20 +332,8 @@
       if (!deck) return null;
       return stats(settings).usable ? null : `No due cards with usable sentences in the next ${settings.window} days — try a wider window.`;
     },
-    sessions: [
-      {
-        label: 'Start',
-        build(settings, rnd = Math.random) {
-          return [{
-            type: 'drill',
-            label: 'Sentences',
-            hint: 'Tab moves between gaps · endings of article words and adjectives · leave a gap empty (or type -) for no ending',
-            hideTags: !settings.hints,
-            items: buildRound(settings, rnd),
-          }];
-        },
-      },
-    ],
+    sentences,
+    sessions: [{ label: 'Start', build: (settings, rnd = Math.random) => [sentences(settings, settings.length, rnd)] }],
 
     nounIndex, adjectiveStems, sentenceItem, useNotes, dueNotes, buildRound,
   };

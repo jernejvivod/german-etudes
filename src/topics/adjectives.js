@@ -427,19 +427,29 @@
     };
   }
 
+  // Whether the items have a Komparativ, Superlativ or Partizip, typed as a whole word.
+  const typedWhole = (items) => items.some((i) => i.degree !== 'pos' && i.degree !== 'nom');
+
+  // n sentences in the settings' scope, for the Daily review: shuffled rounds of the chosen mode until there are enough.
+  function sentences(settings, n, rnd = Math.random) {
+    let items = [];
+    while (items.length < n) items.push(...buildRound({ ...settings, order: 'shuffle' }, rnd));
+    items = items.slice(0, n);
+    return drillStep(settings, items, typedWhole(items));
+  }
+
   function tableStep() {
     return { type: 'table', label: 'Endings table', table: endingsTable() };
   }
 
   // The degrees and participles tables come first when the round has them, so the forms are fresh.
-  function startSteps(settings, rnd) {
+  function startSteps(settings, rnd = Math.random) {
     const items = buildRound(settings, rnd);
     const has = (test) => items.some((i) => test(i.degree));
-    const typedWhole = has((d) => d !== 'pos' && d !== 'nom');
     return [
       ...(has(isGraded) ? [{ type: 'table', label: 'Komparativ und Superlativ', table: degreesTable(items) }] : []),
       ...(has(isParticiple) ? [{ type: 'table', label: 'Partizipien', table: participlesTable(items) }] : []),
-      drillStep(settings, items, typedWhole),
+      drillStep(settings, items, typedWhole(items)),
       tableStep(),
     ];
   }
@@ -454,7 +464,7 @@
     options: [
       vocab.OPTION,
       {
-        key: 'mode', label: 'Round', type: 'radio', choices: [
+        key: 'mode', label: 'Round', type: 'radio', round: true, choices: [
           { value: 'quick', label: 'Quick', detail: '12 sentences — every case × variant, genders rotated' },
           { value: 'full', label: 'Full', detail: '48 sentences — every case × gender × variant' },
         ],
@@ -470,13 +480,14 @@
         ],
       },
       {
-        key: 'order', label: 'Order', type: 'radio', choices: [
+        key: 'order', label: 'Order', type: 'radio', round: true, choices: [
           { value: 'shuffle', label: 'Shuffled' },
           { value: 'grouped', label: 'Grouped', detail: 'strong → weak → mixed' },
         ],
       },
       { key: 'hints', label: 'Hints', type: 'toggle', text: 'Show case & gender before answering' },
     ],
+    sentences,
     sessions: [
       {
         label: 'Start',

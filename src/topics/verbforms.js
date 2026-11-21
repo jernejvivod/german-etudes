@@ -911,12 +911,12 @@
     }, 'verbs');
   }
 
+  // n sentences in the settings' scope, for a round here (its table takes the same ones) and for the Daily review.
+  const sentences = (settings, n, rnd = Math.random) => drillStep(buildRound({ ...settings, length: n }, rnd));
+
   function steps(settings, rnd) {
-    const items = buildRound(settings, rnd);
-    return [
-      { type: 'table', label: 'Verb forms', table: partsTable(settings, items, rnd) },
-      drillStep(items),
-    ];
+    const drill = sentences(settings, settings.length, rnd);
+    return [{ type: 'table', label: 'Verb forms', table: partsTable(settings, drill.items, rnd) }, drill];
   }
 
   return {
@@ -948,12 +948,13 @@
         ],
       },
       {
-        key: 'length', label: 'Round', type: 'radio', inline: true, choices: [
+        key: 'length', label: 'Round', type: 'radio', inline: true, round: true, choices: [
           { value: 10, label: '10 sentences' },
           { value: 20, label: '20 sentences' },
         ],
       },
     ],
+    sentences,
     sessions: [
       { label: 'Start', build: (settings, rnd = Math.random) => steps(settings, rnd) },
       { label: 'My irregular verbs', build: (settings, rnd = Math.random) => myVerbsSteps(settings, rnd) },

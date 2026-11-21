@@ -217,15 +217,17 @@
     }, 'sentences');
   }
 
+  const drillStep = (items) => ({
+    type: 'drill', label: 'Sentences', items,
+    hint: 'Nominalisieren: type the preposition and noun phrase (wegen des Regens) · Verbalisieren: the connector and the verb at the end · Tab moves between gaps',
+  });
+
+  // n sentences in the settings' scope, for a round here (its table takes the same ones) and for the Daily review.
+  const sentences = (settings, n, rnd = Math.random) => drillStep(buildRound({ ...settings, length: n }, rnd));
+
   function steps(settings, rnd) {
-    const items = buildRound(settings, rnd);
-    return [
-      { type: 'table', label: 'Konnektor → Präposition', table: tables(items) },
-      {
-        type: 'drill', label: 'Sentences', items,
-        hint: 'Nominalisieren: type the preposition and noun phrase (wegen des Regens) · Verbalisieren: the connector and the verb at the end · Tab moves between gaps',
-      },
-    ];
+    const drill = sentences(settings, settings.length, rnd);
+    return [{ type: 'table', label: 'Konnektor → Präposition', table: tables(drill.items) }, drill];
   }
 
   return {
@@ -250,12 +252,13 @@
       },
       { key: 'hints', label: 'Hints', type: 'toggle', text: 'Show the noun in the gap when nominalising (Ankunft)' },
       {
-        key: 'length', label: 'Round', type: 'radio', inline: true, choices: [
+        key: 'length', label: 'Round', type: 'radio', inline: true, round: true, choices: [
           { value: 10, label: '10 sentences' },
           { value: 20, label: '20 sentences' },
         ],
       },
     ],
+    sentences,
     sessions: [
       { label: 'Start', build: (settings, rnd = Math.random) => steps(settings, rnd) },
       { label: 'Table only', build: () => [{ type: 'table', label: 'Konnektor → Präposition', table: tables() }] },

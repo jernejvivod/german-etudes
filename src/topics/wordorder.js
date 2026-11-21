@@ -594,6 +594,19 @@
     }, 'sentences');
   }
 
+  function drillStep(settings, rnd) {
+    return {
+      type: 'drill',
+      label: 'Sentences',
+      hint: 'Type the verb (or the shown word) into the gap where it belongs · leave the other gap empty · zu-Infinitiv: with zu where it needs one (anzurufen) · Tab moves between gaps',
+      hideTags: !settings.hints,
+      items: buildRound(settings, rnd),
+    };
+  }
+
+  // n sentences in the settings' scope, for a round here and for the Daily review.
+  const sentences = (settings, n, rnd = Math.random) => drillStep({ ...settings, length: n }, rnd);
+
   return {
     id: 'wordorder',
     title: 'Satzstellung',
@@ -624,24 +637,14 @@
       },
       { key: 'hints', label: 'Hints', type: 'toggle', text: 'Show the connector type before answering' },
       {
-        key: 'length', label: 'Round', type: 'radio', inline: true, choices: [
+        key: 'length', label: 'Round', type: 'radio', inline: true, round: true, choices: [
           { value: 10, label: '10 sentences' },
           { value: 20, label: '20 sentences' },
         ],
       },
     ],
-    sessions: [
-      {
-        label: 'Start',
-        build: (settings, rnd = Math.random) => [{
-          type: 'drill',
-          label: 'Sentences',
-          hint: 'Type the verb (or the shown word) into the gap where it belongs · leave the other gap empty · zu-Infinitiv: with zu where it needs one (anzurufen) · Tab moves between gaps',
-          hideTags: !settings.hints,
-          items: buildRound(settings, rnd),
-        }],
-      },
-    ],
+    sentences,
+    sessions: [{ label: 'Start', build: (settings, rnd = Math.random) => [sentences(settings, settings.length, rnd)] }],
 
     GROUPS, CONNECTORS,
     connectorItem, frontedItem, contentItem, modalItem, zuItem, jeItem, pairedItem, deckItem, deckItems, buildRound,

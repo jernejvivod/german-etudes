@@ -122,12 +122,17 @@
 
   const tableStep = (pairs) => ({ type: 'table', label: 'Funktionsverbgefüge', table: table(pairs) });
 
+  const drillStep = (pairs, settings) => ({
+    type: 'drill', label: 'Sentences', items: pairs.map((e) => buildItem(e, settings.vocab)),
+    hint: 'Say the plain sentence with the noun shown: type its verb and the preposition or article before it · Tab moves between gaps',
+  });
+
+  // n sentences in the settings' scope, for the Daily review (a round here builds its table from the same pairs).
+  const sentences = (settings, n, rnd = Math.random) => drillStep(pickRound({ ...settings, length: n }, rnd), settings);
+
   function steps(settings, rnd) {
     const pairs = pickRound(settings, rnd);
-    return [
-      tableStep(pairs),
-      { type: 'drill', label: 'Sentences', items: pairs.map((e) => buildItem(e, settings.vocab)), hint: 'Say the plain sentence with the noun shown: type its verb and the preposition or article before it · Tab moves between gaps' },
-    ];
+    return [tableStep(pairs), drillStep(pairs, settings)];
   }
 
   return {
@@ -145,12 +150,13 @@
         ],
       },
       {
-        key: 'length', label: 'Round', type: 'radio', inline: true, choices: [
+        key: 'length', label: 'Round', type: 'radio', inline: true, round: true, choices: [
           { value: 10, label: '10 sentences' },
           { value: 20, label: '20 sentences' },
         ],
       },
     ],
+    sentences,
     sessions: [
       { label: 'Start', build: (settings, rnd = Math.random) => steps(settings, rnd) },
       { label: 'Verbs table only', build: (settings, rnd = Math.random) => [tableStep(pickRound(settings, rnd))] },
