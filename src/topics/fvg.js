@@ -99,7 +99,7 @@
   const buildRound = (settings, rnd = Math.random) => pickRound(settings, rnd).map((e) => buildItem(e, settings.vocab));
 
   // Which verb goes with the pairs' nouns: "eine Entscheidung …" → treffen (zur Verfügung … takes stellen or stehen).
-  function table(pairs) {
+  function verbsTable(pairs) {
     const rows = new Map();
     for (const e of pairs) {
       const row = e.pair.split(' ').map((w) => (w === e.verb ? '…' : w)).join(' ');
@@ -120,7 +120,7 @@
     }, 'pairs');
   }
 
-  const tableStep = (pairs) => ({ type: 'table', label: 'Funktionsverbgefüge', table: table(pairs) });
+  const tableStep = (pairs) => ({ type: 'table', label: 'Funktionsverbgefüge', table: verbsTable(pairs) });
 
   const drillStep = (pairs, settings) => ({
     type: 'drill', label: 'Sentences', items: pairs.map((e) => buildItem(e, settings.vocab)),
@@ -162,6 +162,6 @@
       { label: 'Verbs table only', build: (settings, rnd = Math.random) => [tableStep(pickRound(settings, rnd))] },
     ],
 
-    PAIRS, buildItem, buildRound, table,
+    PAIRS, buildItem, buildRound, verbsTable,
   };
 });
