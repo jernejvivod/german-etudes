@@ -73,3 +73,34 @@ test('scopeChoices: the choices a kind of mark can hold (Präpositionen\'s case 
   assert.deepEqual(S.scopeChoices(groups, 'table'), ['akk', 'dat', 'wechsel', 'gen']);
   assert.deepEqual(S.scopeChoices(passive.options.find((o) => o.key === 'kinds'), 'table'), ['werden', 'sein', 'bekommen', 'ersatz']);
 });
+
+test('partGroups: the tick-box options whose choices are a kind of mark\'s parts', () => {
+  const prepositions = require('../src/topics/prepositions.js');
+  const determiners = require('../src/topics/determiners.js');
+  const adjectives = require('../src/topics/adjectives.js');
+  const fvg = require('../src/topics/fvg.js');
+  const keys = (t, kind) => S.partGroups(t, kind).map((o) => o.key);
+  assert.deepEqual(keys(passive, 'sentences'), ['kinds', 'tenses']);
+  assert.deepEqual(keys(passive, 'table'), ['kinds', 'tenses']);
+  assert.deepEqual(keys(determiners, 'sentences'), ['families', 'cases']);
+  assert.deepEqual(keys(determiners, 'table'), ['families'], 'the cases are not part of the table');
+  assert.deepEqual(keys(prepositions, 'table'), ['groups']);
+  assert.deepEqual(keys(adjectives, 'table'), [], 'the whole table, no parts');
+  assert.deepEqual(keys(fvg, 'sentences'), []);
+  assert.deepEqual(keys(topic), ['parts'], 'the sentences by default');
+});
+
+test('partsText: the ticked parts in words, an option without any left out', () => {
+  const prepositions = require('../src/topics/prepositions.js');
+  const fvg = require('../src/topics/fvg.js');
+  const every = { kinds: ['werden', 'sein', 'bekommen', 'ersatz'], tenses: [...passive.TENSES] };
+  assert.equal(S.partsText(passive, { kinds: ['werden'], tenses: ['praet', 'praes'] }), 'Vorgangspassiv · Präsens, Präteritum');
+  assert.equal(S.partsText(passive, { kinds: ['werden'], tenses: [...passive.TENSES] }), 'Vorgangspassiv · all tenses');
+  assert.equal(S.partsText(passive, every), 'all');
+  assert.equal(S.partsText(passive, every, 'table'), 'the whole table');
+  assert.equal(S.partsText(passive, { tenses: ['praes', 'praet'] }), 'Präsens, Präteritum', 'no kind ticked');
+  assert.equal(S.partsText(passive, {}), '');
+  assert.equal(S.partsText(prepositions, { groups: ['akk', 'dat', 'wechsel', 'gen'] }, 'table'), 'the whole table');
+  assert.equal(S.partsText(prepositions, { groups: ['akk', 'dat', 'wechsel', 'gen'] }), 'Akkusativ, Dativ, Wechselpräpositionen, Genitiv');
+  assert.equal(S.partsText(fvg, {}), 'all');
+});
