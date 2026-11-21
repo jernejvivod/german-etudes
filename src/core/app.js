@@ -4,8 +4,8 @@
 //   intro: text, or settings → text; prepare: async, loads the topic's data when it is opened and resolves to an error or null
 //   options: [{ key, label, type: 'radio' | 'checkboxes' | 'toggle', choices?, text?, min?, inline? }]
 // A step is { type: 'drill', label, items, hint?, hideTags? } or { type: 'table', label, table }.
-// A drill item may name the Anki notes it uses (notes): once it is checked they count as shown (vocab.markShown), so the
-// next rounds bring other cards.
+// A drill item may name the Anki notes it uses (notes): once it is checked right they count as shown (vocab.markShown),
+// so the next rounds bring other cards; checked wrong, they are not held back (vocab.markMissed).
 // A table cell's answer is a string or a list of accepted strings (the first is shown as the correction); a block with
 // exact: true checks upper / lower case too (Ihr is not ihr).
 (function () {
@@ -349,7 +349,8 @@
 
     const allOk = grades.every((g) => g.ok);
     drill.results.push({ item, grades });
-    vocab.markShown(item.notes);
+    if (allOk) vocab.markShown(item.notes);
+    else vocab.markMissed(item.notes);
     updateProgress();
 
     if (drill.hideTags) $('tags').replaceChildren(tagsFragment(item));

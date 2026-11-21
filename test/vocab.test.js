@@ -365,6 +365,9 @@ test('shown cards count a twentieth right after, and their full weight again thr
   assert.ok(shares(pool, {}, 2000).seen > 0.09);
 });
 
+// A storage that fails at everything, as a full or blocked one does.
+const BROKEN = { getItem() { throw new Error('denied'); }, setItem() { throw new Error('full'); }, removeItem() { throw new Error('denied'); } };
+
 test('what was shown is kept in the storage, survives a restart, and old entries are dropped', (t) => {
   const storage = STORAGE;
   t.after(() => V.useStorage(storage));
@@ -394,8 +397,7 @@ test('what was shown is kept in the storage, survives a restart, and old entries
   assert.deepEqual(JSON.parse(storage.data.get(V.SHOWN_KEY)), { 104: NOW });
 
   // A storage that fails: what was shown is still remembered while the app runs.
-  const broken = { getItem() { throw new Error('denied'); }, setItem() { throw new Error('full'); }, removeItem() { throw new Error('denied'); } };
-  V.useStorage(broken);
+  V.useStorage(BROKEN);
   V.markShown([card(105, 0)], NOW);
   assert.ok(near(V.weight(card(105, 0), NOW), 0.05));
   V.forget();
@@ -405,6 +407,73 @@ test('what was shown is kept in the storage, survives a restart, and old entries
   V.useStorage(storage);
   V.forget();
   assert.equal(storage.data.size, 0);
+});
+
+test('a card answered wrong is not held back: it counts in full at once; the last answer wins', () => {
+  V.forget();
+  const missed = card('missed', 0, 1);
+  const right = card('right', 0, 1);
+  V.markShown([missed, right], NOW);
+  V.markMissed([missed], NOW);
+  assert.equal(V.weight(missed, NOW), 3);
+  assert.ok(near(V.weight(right, NOW), 3 * 0.05));
+  // Nothing to mark is fine; a card never shown stays as it was.
+  V.markMissed(undefined, NOW);
+  V.markMissed([], NOW);
+  V.markMissed([card('new', 0)], NOW);
+  assert.equal(V.weight(card('new', 0), NOW), 1);
+  assert.ok(near(V.weight(right, NOW), 3 * 0.05));
+
+  // Right after wrong: held back again; wrong after right: released again — every card of the item.
+  V.markShown([missed], NOW + DAY);
+  assert.ok(near(V.weight(missed, NOW + DAY), 3 * 0.05));
+  V.markMissed([missed, right], NOW + DAY);
+  assert.deepEqual([V.weight(missed, NOW + DAY), V.weight(right, NOW + DAY)], [3, 3]);
+  V.forget();
+});
+
+test('a card answered wrong leaves the storage as well; old entries are dropped with that write too', (t) => {
+  const storage = STORAGE;
+  t.after(() => V.useStorage(storage));
+  V.forget();
+  V.markShown([card(101, 0), card(102, 0)], NOW);
+  V.markMissed([card(101, 0)], NOW);
+  assert.deepEqual(JSON.parse(storage.data.get(V.SHOWN_KEY)), { 102: NOW });
+
+  // A restart: the miss is remembered.
+  V.useStorage(storage);
+  assert.equal(V.weight(card(101, 0), NOW), 1);
+  assert.ok(near(V.weight(card(102, 0), NOW), 0.05));
+
+  V.markShown([card(103, 0)], NOW + 2 * DAY);
+  V.markMissed([card(104, 0)], NOW + 4 * DAY);
+  assert.deepEqual(JSON.parse(storage.data.get(V.SHOWN_KEY)), { 103: NOW + 2 * DAY });
+
+  // A storage that fails: the miss still counts while the app runs.
+  V.useStorage(BROKEN);
+  V.markShown([card(105, 0), card(106, 0)], NOW);
+  V.markMissed([card(105, 0)], NOW);
+  assert.equal(V.weight(card(105, 0), NOW), 1);
+  assert.ok(near(V.weight(card(106, 0), NOW), 0.05));
+  V.forget();
+});
+
+test('pickDue: cards answered wrong are picked like cards not checked yet, those answered right hardly at all', () => {
+  V.forget();
+  // Sixteen cards due today; eight checked, two of them wrong: 8 + 2 unchecked or missed ones (1) and 6 right (0.05).
+  const due = Array.from({ length: 16 }, (_, i) => word(`d${i}`, card(`d${i}`, 0)));
+  V.markShown(due.slice(0, 8).map((w) => w.note), NOW);
+  V.markMissed(due.slice(0, 2).map((w) => w.note), NOW);
+  const got = shares(due);
+  for (const lemma of ['d0', 'd1', 'd8', 'd15']) assert.ok(near(got[lemma], 1 / 10.3, 0.015), JSON.stringify(got));
+  for (let i = 2; i < 8; i++) assert.ok(got[`d${i}`] < 0.01, JSON.stringify(got));
+
+  // A hard card answered wrong is back at once, but still gets no more than an eighth.
+  const hard = word('hard', card('hard', 0, 5));
+  V.markShown([hard.note], NOW);
+  V.markMissed([hard.note], NOW);
+  assert.ok(near(shares([hard, ...due]).hard, 1 / 8, 0.015));
+  V.forget();
 });
 
 test('pools: the deck\'s words alone from eight up, with the built-in ones below', () => {
@@ -490,21 +559,28 @@ test('noun drills: items name the notes of the deck nouns they use', () => {
   for (const item of negated) assert.ok(!item.notes.length || item.notes[0] === noteOf.get(item.key), item.key);
 });
 
+// Sixteen masculine clothes, enough for a noun drill to do without the built-in nouns.
+const GARMENTS = ['Mantel, Mäntel', 'Rock, Röcke', 'Schuh, Schuhe', 'Stiefel, Stiefel', 'Pullover, Pullover', 'Anzug, Anzüge',
+  'Gürtel, Gürtel', 'Schal, Schals', 'Handschuh, Handschuhe', 'Strumpf, Strümpfe', 'Hut, Hüte', 'Regenmantel, Regenmäntel',
+  'Schlips, Schlipse', 'Kittel, Kittel', 'Umhang, Umhänge', 'Overall, Overalls'];
+
+// The nouns of n adjective drill items (weak endings, masculine accusative) on the deck's nouns.
+function drillNouns(n, rnd) {
+  const A = require('../src/topics/adjectives.js');
+  return Array.from({ length: n }, () => A.buildItem('weak', 'm', 'acc', rnd, [], 'anki').noun);
+}
+
 test('noun drills: nouns due now come up far more than those due in a month, until they have been checked', (t) => {
   V.forget();
   t.after(() => V.useNotes(NOTES));
-  const A = require('../src/topics/adjectives.js');
-  // Sixteen masculine clothes, enough to do without the built-in nouns: eight due today, eight in a month.
-  const words = ['Mantel, Mäntel', 'Rock, Röcke', 'Schuh, Schuhe', 'Stiefel, Stiefel', 'Pullover, Pullover', 'Anzug, Anzüge',
-    'Gürtel, Gürtel', 'Schal, Schals', 'Handschuh, Handschuhe', 'Strumpf, Strümpfe', 'Hut, Hüte', 'Regenmantel, Regenmäntel',
-    'Schlips, Schlipse', 'Kittel, Kittel', 'Umhang, Umhänge', 'Overall, Overalls'];
-  V.useNotes(words.map((w, i) => note('der', w, 'garment', CLOTHES, { dueIn: i < 8 ? 0 : 30 })));
+  // Eight due today, eight in a month.
+  V.useNotes(GARMENTS.map((w, i) => note('der', w, 'garment', CLOTHES, { dueIn: i < 8 ? 0 : 30 })));
   const today = new Set(V.nouns.filter((n) => n.note.dueIn === 0).map((n) => n.lemma));
   assert.deepEqual([today.size, V.nouns.length], [8, 16]);
   const rnd = mulberry32(54);
   const count = () => {
     const times = { today: 0, later: 0 };
-    for (let i = 0; i < 400; i++) times[today.has(A.buildItem('weak', 'm', 'acc', rnd, [], 'anki').noun) ? 'today' : 'later']++;
+    for (const noun of drillNouns(400, rnd)) times[today.has(noun) ? 'today' : 'later']++;
     return times;
   };
   const before = count();
@@ -512,5 +588,25 @@ test('noun drills: nouns due now come up far more than those due in a month, unt
   // Once the eight have been checked, the others get their turn.
   V.markShown(V.nouns.filter((n) => today.has(n.lemma)).map((n) => n.note));
   assert.ok(count().later > 100);
+  V.forget();
+});
+
+test('noun drills: nouns answered wrong come up far more than those answered right', (t) => {
+  V.forget();
+  t.after(() => V.useNotes(NOTES));
+  // All due today; the first eight checked, four of them wrong.
+  V.useNotes(GARMENTS.map((w) => note('der', w, 'garment', CLOTHES, { dueIn: 0 })));
+  const nouns = V.nouns.slice(0, 8);
+  assert.equal(V.nouns.length, 16);
+  V.markShown(nouns.map((n) => n.note));
+  V.markMissed(nouns.slice(0, 4).map((n) => n.note));
+  const missed = new Set(nouns.slice(0, 4).map((n) => n.lemma));
+  const right = new Set(nouns.slice(4).map((n) => n.lemma));
+  const times = { missed: 0, right: 0 };
+  for (const noun of drillNouns(400, mulberry32(55))) {
+    if (missed.has(noun)) times.missed++;
+    else if (right.has(noun)) times.right++;
+  }
+  assert.ok(times.missed > 80 && times.missed > 8 * times.right, JSON.stringify(times));
   V.forget();
 });

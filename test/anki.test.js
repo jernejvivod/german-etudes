@@ -104,3 +104,16 @@ test('due cards within the window; a round draws among them and names their note
   V.markShown(NOTES.filter((n) => [5, 6, 8].includes(n.id)));
   assert.deepEqual(all(7), [1, 2, 3, 5, 6, 8]);
 });
+
+test('a card answered wrong comes back in the next round more often than ones answered right', () => {
+  V.forget();
+  // Every card checked a moment ago; the man (1) wrong, the remedy and the pharmacy (2, 3: the same schedule) right.
+  V.markShown(NOTES);
+  V.markMissed([NOTES[0]]);
+  const times = { 1: 0, 2: 0, 3: 0 };
+  for (let seed = 1; seed <= 40; seed++) {
+    for (const item of A.buildRound({ window: 7, length: 2 }, mulberry32(seed))) if (item.notes[0].id in times) times[item.notes[0].id]++;
+  }
+  assert.ok(times[1] > 2 * Math.max(times[2], times[3]), JSON.stringify(times));
+  V.forget();
+});

@@ -14,7 +14,7 @@
 // The deck gives article, singular and (often) plural; genitive and n-declension follow the usual rules.
 //
 // Which of the deck's cards a round uses is decided here as well, for every topic: by weight (how soon the card is due,
-// how hard it has been, how lately it was shown here — see weight, pickDue, sample), not in a fixed order.
+// how hard it has been, how lately it was answered right here — see weight, pickDue, sample), not in a fixed order.
 (function (root, factory) {
   const deps = typeof module === 'object' && module.exports
     ? [require('./cloze.js'), require('./declension.js'), require('./verbs.js'), require('./store.js')]
@@ -371,10 +371,11 @@
 
   // ---------- What was shown lately ----------
 
-  // The cards the learner has just worked on: note id → when it was last checked (ms). Kept between sessions like the
+  // The cards the learner has just got right: note id → when it was last checked (ms). Kept between sessions like the
   // settings (store.js), so the next round — today or after a
   // restart — brings other cards. A card counts SHOWN_WEIGHT right after and its full weight again RECOVERY later;
   // entries older than that are dropped with the next write, which keeps the list to the last few days' practice.
+  // A card answered wrong leaves the list (markMissed): it is not held back, so it can come back in the next round.
   const SHOWN_KEY = 'etudes-shown';
   const SHOWN_WEIGHT = 0.05;
   const DAY = 24 * 3600e3;
@@ -389,13 +390,26 @@
     return shown;
   }
 
-  // Remembers the notes of an item the learner has just checked.
+  // Stores the list, without the entries that have recovered by now.
+  function saveShown(times, now) {
+    for (const [id, at] of times) if (now - at >= RECOVERY) times.delete(id);
+    store.write(SHOWN_KEY, Object.fromEntries(times));
+  }
+
+  // Remembers the notes of an item the learner has just got right.
   function markShown(checked, now = Date.now()) {
     if (!checked?.length) return;
     const times = shownCards();
-    for (const [id, at] of times) if (now - at >= RECOVERY) times.delete(id);
     for (const note of checked) times.set(String(note.id), now);
-    store.write(SHOWN_KEY, Object.fromEntries(times));
+    saveShown(times, now);
+  }
+
+  // Releases the notes of an item the learner has just got wrong: they count in full again, whenever they were shown.
+  function markMissed(checked, now = Date.now()) {
+    if (!checked?.length) return;
+    const times = shownCards();
+    for (const note of checked) times.delete(String(note.id));
+    saveShown(times, now);
   }
 
   // How much a card counts after it was shown: SHOWN_WEIGHT right after, rising evenly back to 1 over RECOVERY.
@@ -512,7 +526,7 @@
   }
 
   // The notes of the deck's words among the given nouns, verb entries and the like: what an item built from them
-  // names as its notes, to be marked as shown once it is checked.
+  // names as its notes, to be marked as shown (markShown) or missed (markMissed) once it is checked.
   function notesOf(...words) {
     return words.map(cardOf).filter(Boolean);
   }
@@ -624,7 +638,7 @@
   return {
     OPTION, ARTICLE_GENDER, parseWord, isNNoun, genitive, useNotes, load, prepare, intro, prefer, pool, possessiveFits, withArticle,
     status, deckStatus, hardestFirst, learnt, deckShare, pickPreferring, ANKI_TAG,
-    urgency, difficulty, weight, sample, pickDue, notesOf, noteFor, markShown, forget, useStorage, SHOWN_KEY,
+    urgency, difficulty, weight, sample, pickDue, notesOf, noteFor, markShown, markMissed, forget, useStorage, SHOWN_KEY,
     get notes() { return notes; },
     get verbs() { return deckVerbs; },
     // The verb cards in review or relearning.
