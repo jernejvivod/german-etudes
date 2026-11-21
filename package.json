@@ -8,9 +8,11 @@
     "start": "electron .",
     "test": "node --test test/*.test.js",
     "test:e2e": "node --test test/e2e/*.e2e.js",
-    "icon": "electron tools/render-icon.js"
+    "icon": "electron tools/render-icon.js",
+    "package": "node tools/package-app.js"
   },
   "devDependencies": {
+    "@electron/packager": "20.3.0",
     "electron": "^45.2.1"
   },
   "productName": "German Etudes"
