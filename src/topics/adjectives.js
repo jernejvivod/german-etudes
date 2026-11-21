@@ -10,7 +10,7 @@
 })(globalThis, function (cloze, declension, lexicon, vocab, verbs) {
   'use strict';
 
-  const { gap, fillTemplate, pick, pickWeighted, pickFresh, remember, shuffle, gaps, display } = cloze;
+  const { gap, fillTemplate, pick, pickWeighted, remember, shuffle, gaps, display } = cloze;
 
   const { CASES, GENDERS, CASE_LABELS, GENDER_LABELS, CASE_ROWS, GENDER_COLS, ADJ_ENDINGS, DET_ENDINGS } = declension;
   const { NOUNS, adjectivesFor, degreeStems } = lexicon;
@@ -100,21 +100,22 @@
 
   // ---------- Adjectives used as nouns ----------
 
-  // Built-in ones; with the Anki option, the deck's learnt ones too (der / die Verwandte) — alone where enough are learnt.
+  // Built-in ones; with the Anki option, the deck's learnt ones too (der / die Verwandte), weighted by their card.
   const NOMINALS = ['Bekannt', 'Verwandt', 'Erwachsen', 'Deutsch', 'Krank', 'Arbeitslos', 'Jugendlich', 'Fremd', 'Angestellt', 'Reisend', 'Verlobt'];
   // One's own: "mein Bekannter", "unsere Verwandten" (not "sein Fremder").
   const OWN_NOMINALS = new Set(['Bekannt', 'Verwandt', 'Verlobt', 'Angestellt']);
   const MEANT = { m: 'ein Mann', f: 'eine Frau', pl: 'mehrere Leute' };
 
-  // A stand-in noun for an adjective used as a noun, so the person frames and determiners are chosen as for any noun:
-  // the deck's learnt ones where two or more fit the cell, the built-in ones too otherwise (some cells need a possessive:
-  // "unserer Verwandten"). Not vocab.prefer: these carry no card, so they can't be weighted against the built-in ones.
+  // A stand-in noun for an adjective used as a noun, so the person frames and determiners are chosen as for any noun.
+  // The deck's carry their card (note) and are picked by it like any deck noun (vocab.prefer, pickDue): alone where
+  // enough fit the cell, with the built-in ones otherwise (some cells need a possessive: "unserer Verwandten"). A deck
+  // stem replaces the built-in one of the same stem.
   function nominalNoun(variant, gender, caseKey, rnd, avoid, source) {
-    const asNoun = (stem) => ({ cat: 'person', g: gender === 'pl' ? 'm' : gender, lemma: stem, mass: false, own: OWN_NOMINALS.has(stem), sg: true, pl: true });
-    const fitting = (words) => words.filter((w) => framesFor(variant, gender, caseKey, asNoun(w), 'nom').length);
-    const mine = source === 'anki' ? fitting(vocab.nominals) : [];
-    const pool = mine.length >= 2 ? mine : [...new Set([...mine, ...fitting(NOMINALS)])];
-    return asNoun(pickFresh(pool, avoid, (w) => w, rnd));
+    const asNoun = (stem, note) => ({ cat: 'person', g: gender === 'pl' ? 'm' : gender, lemma: stem, mass: false, own: OWN_NOMINALS.has(stem), sg: true, pl: true, note });
+    const fitting = (nouns) => nouns.filter((n) => framesFor(variant, gender, caseKey, n, 'nom').length);
+    const builtin = fitting(NOMINALS.map((stem) => asNoun(stem)));
+    const pool = source === 'anki' ? vocab.prefer(fitting(vocab.nominals.map((x) => asNoun(x.stem, x.note))), builtin) : builtin;
+    return vocab.pickDue(pool, rnd, { recent: avoid });
   }
 
   // The participles of the noun that make sense in the frame (any word fits a frame in the other degrees).
@@ -465,7 +466,7 @@
           { value: 'sup', label: 'Superlativ', detail: 'der älteste Mann · with der or a possessive' },
           { value: 'p1', label: 'Partizip I', detail: 'der schlafende Hund · die seit Stunden wartenden Gäste' },
           { value: 'p2', label: 'Partizip II', detail: 'das reparierte Auto · das gestern gekaufte Buch' },
-          { value: 'nom', label: 'Nominalisiert', detail: 'der Bekannte, ein Bekannter, mit Verwandten · your deck\'s ones first' },
+          { value: 'nom', label: 'Nominalisiert', detail: 'der Bekannte, ein Bekannter, mit Verwandten · your deck\'s ones, those due soon and hard most often' },
         ],
       },
       {

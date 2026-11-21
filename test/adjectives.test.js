@@ -5,7 +5,8 @@ const assert = require('node:assert/strict');
 const G = require('../src/topics/adjectives.js');
 const lexicon = require('../src/core/lexicon.js');
 const { gaps, text } = require('../src/core/cloze.js');
-const { mulberry32, findItem } = require('./helpers.js');
+const V = require('../src/core/vocab.js');
+const { mulberry32, findItem, isolateStorage, ankiNote } = require('./helpers.js');
 
 test('every case × gender × variant has nouns and frames', () => {
   for (const v of G.VARIANTS) {
@@ -221,12 +222,61 @@ test('nominalised adjectives: people only, the adjective ending on a capitalized
   assert.equal(mixed.length, 48);
 });
 
-test('nominalised adjectives from the deck: same word for both genders, not der Vorfahre / die Vorfahrin', () => {
-  const V = require('../src/core/vocab.js');
-  const card = (word) => ({ word, pos: 'n m/f', dueIn: 2, lapses: 0, ease: 2500, english: '', article: 'der', headings: [], examples: [] });
-  V.useNotes([card('Verwandte, die Verwandte'), card('Vorfahre, die Vorfahrin'), card('Erwachsene, die Erwachsene, Erwachsenen')]);
-  assert.deepEqual(V.nominals, ['Verwandt', 'Erwachsen']);
-  V.useNotes([]);
+// A deck card for a person in m/f with the same word for both: "Verwandte, die Verwandte".
+const nominalCard = (word, fields) => ankiNote(`${word}, die ${word}`, { pos: 'n m/f', ...fields });
+// The weak masculine nominative 'nom' items of n draws.
+const nomItems = (n, rnd) => Array.from({ length: n }, () => G.buildItem('weak', 'm', 'nom', rnd, [], 'anki', 'nom'));
+
+test('nominalised adjectives from the deck: same word for both genders, with its card, not der Vorfahre / die Vorfahrin', (t) => {
+  t.after(() => V.useNotes([]));
+  const notes = [nominalCard('Verwandte'), ankiNote('Vorfahre, die Vorfahrin', { pos: 'n m/f' }), ankiNote('Erwachsene, die Erwachsene, Erwachsenen', { pos: 'n m/f' })];
+  V.useNotes(notes);
+  assert.deepEqual(V.nominals.map((x) => x.stem), ['Verwandt', 'Erwachsen']);
+  assert.deepEqual(V.nominals.map((x) => x.note), [notes[0], notes[2]]);
+  // Two cards for one stem: one entry, with the hardest card.
+  const hard = nominalCard('Verwandte', { id: 'hard', lapses: 3 });
+  V.useNotes([nominalCard('Verwandte', { id: 'easy' }), hard]);
+  assert.deepEqual(V.nominals, [{ stem: 'Verwandt', note: hard }]);
+});
+
+test('nominalised adjectives from the deck name their card, the built-in ones join where few are learnt', (t) => {
+  isolateStorage(t);
+  t.after(() => V.useNotes([]));
+  const notes = [nominalCard('Verwandte'), nominalCard('Abgeordnete')];
+  V.useNotes(notes);
+  const byStem = { Verwandt: [notes[0]], Abgeordnet: [notes[1]] };
+  const rnd = mulberry32(73);
+  const items = [...G.buildRound({ mode: 'full', vocab: 'anki', degrees: ['nom'] }, rnd), ...nomItems(100, rnd)];
+  // Verwandt is a built-in one too: always the deck's.
+  for (const it of items) assert.deepEqual(it.notes, byStem[it.noun] || [], it.noun);
+  assert.ok(items.some((it) => it.noun === 'Abgeordnet') && items.some((it) => it.noun === 'Verwandt'));
+  assert.ok(items.some((it) => !it.notes.length), 'no built-in nominalised adjective');
+  for (const it of G.buildRound({ mode: 'full', vocab: 'builtin', degrees: ['nom'] }, rnd)) assert.deepEqual(it.notes, []);
+});
+
+test('nominalised adjectives from the deck: the due and hard ones most often, less right after they were shown', (t) => {
+  isolateStorage(t);
+  t.after(() => V.useNotes([]));
+  const hard = nominalCard('Abgeordnete', { lapses: 3 });
+  V.useNotes([hard, nominalCard('Vorgesetzte'), nominalCard('Gefangene', { dueIn: 60 })]);
+  const counts = (seed) => {
+    const count = { Abgeordnet: 0, Vorgesetzt: 0, Gefangen: 0 };
+    for (const it of nomItems(300, mulberry32(seed))) if (it.noun in count) count[it.noun]++;
+    return count;
+  };
+  const before = counts(74);
+  // Among three deck words one gets at most twice its even share of their picks (vocab's MAX_SHARE).
+  assert.ok(before.Abgeordnet > before.Vorgesetzt && before.Abgeordnet > 10 * before.Gefangen, JSON.stringify(before));
+  V.markShown([hard]);
+  const after = counts(74);
+  assert.ok(after.Abgeordnet < 0.6 * before.Abgeordnet && after.Abgeordnet < after.Vorgesetzt, JSON.stringify(after));
+});
+
+test('nominalised adjectives: from eight learnt ones the built-in ones drop out', (t) => {
+  isolateStorage(t);
+  t.after(() => V.useNotes([]));
+  V.useNotes(['Abgeordnete', 'Vorgesetzte', 'Gefangene', 'Geliebte', 'Obdachlose', 'Tote', 'Kranke', 'Jugendliche'].map((w) => nominalCard(w)));
+  for (const it of nomItems(100, mulberry32(75))) assert.equal(it.notes.length, 1, it.noun);
 });
 
 test('a full round of nominalised adjectives has no repeated cells', () => {
