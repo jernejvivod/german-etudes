@@ -36,6 +36,8 @@
 
   const inScope = (opt, kind) => (kind === 'table' ? !!opt.table : !opt.round && !('daily' in opt));
   const scoped = (opt, value, kind) => (kind === 'table' && typeof opt.table === 'function' ? opt.table(value) : value);
+  // The choices of a checkboxes option a kind of mark can hold (Präpositionen's case table: the groups with a case).
+  const scopeChoices = (opt, kind) => scoped(opt, choiceValues(opt), kind);
 
   // The part of the settings a kind of mark keeps, keys in the options' order.
   function scopeOf(topic, settings, kind = 'sentences') {
@@ -56,7 +58,7 @@
     const values = scopeOf(topic, settings, kind);
     const parts = options.filter((opt) => opt.type === 'checkboxes').map((opt) => {
       const chosen = opt.choices.filter((c) => values[opt.key]?.includes(c.value));
-      const all = chosen.length === scoped(opt, choiceValues(opt), kind).length;
+      const all = chosen.length === scopeChoices(opt, kind).length;
       return { all, text: all ? `all ${opt.label.toLowerCase()}` : chosen.map((c) => c.label).join(', ') };
     });
     const words = parts.every((p) => p.all) ? [kind === 'table' ? 'the whole table' : 'all'] : parts.map((p) => p.text);
@@ -68,5 +70,5 @@
     return words.join(' · ');
   }
 
-  return { choiceValues, fitSettings, settingsProblem, scopeOf, sameScope, scopeText };
+  return { choiceValues, fitSettings, settingsProblem, inScope, scopeChoices, scopeOf, sameScope, scopeText };
 });

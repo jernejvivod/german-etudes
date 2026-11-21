@@ -100,9 +100,10 @@ function driver(send, dir, saidPath) {
     fs.mkdirSync(process.env.ETUDES_SHOTS, { recursive: true });
     fs.writeFileSync(path.join(process.env.ETUDES_SHOTS, `${name}.png`), Buffer.from(data, 'base64'));
   }
-  // Opens a topic (or a daily exercise) from the home screen and waits until its data has loaded.
-  async function openTopic(id) {
-    await click(`[data-topic="${id}"]`);
+  // Opens a topic (or a daily exercise) from the home screen, or from the screen within names (#progress), and waits
+  // until its data has loaded.
+  async function openTopic(id, within = '#home') {
+    await click(`${within} [data-topic="${id}"]`);
     assert.equal(await screen(), 'options');
     await waitFor(`document.getElementById('options-intro').textContent !== 'Loading…'`, `${id}'s options to be ready`, 15000);
   }

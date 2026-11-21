@@ -1,4 +1,4 @@
-// App shell: topic picker, topic options, and the generic drill / summary / table steps.
+// App shell: topic picker, topic options, the Progress checklist, and the generic drill / summary / table steps.
 //
 // A topic is { id, title, subtitle, intro, defaults, options, validate?, prepare?, sentences?, table?, listing?,
 //   sessions: [{ label, build(settings, rnd?) → steps }] }
@@ -27,17 +27,17 @@
 (function () {
   'use strict';
 
-  const { cloze, nav, topics, vocab, store, scope, daily } = window.Etudes;
+  const { cloze, nav, topics, vocab, store, scope, daily, progress } = window.Etudes;
   const $ = (id) => document.getElementById(id);
 
   // The daily exercises, shown above the topics.
   const dailies = [daily.reviewTopic(topics), daily.tablesTopic(topics)];
 
   // What a topic can be marked learnt for, in the daily exercises: a topic with sentences or a table (t[kind]). uses:
-  // how the note on another scope starts.
+  // how the note on another scope starts; name: the mark on the Progress screen.
   const LEARNT = [
-    { kind: 'sentences', label: 'Sentences learnt', detail: 'comes up in the Daily review with these settings', uses: 'The Daily review uses' },
-    { kind: 'table', label: 'Table learnt', detail: 'comes up in Daily tables with these settings', uses: 'Daily tables use' },
+    { kind: 'sentences', name: 'Sentences', label: 'Sentences learnt', detail: 'comes up in the Daily review with these settings', uses: 'The Daily review uses' },
+    { kind: 'table', name: 'Table', label: 'Table learnt', detail: 'comes up in Daily tables with these settings', uses: 'Daily tables use' },
   ];
 
   let screen = 'home';
@@ -179,13 +179,96 @@
     }));
   }
 
-  // Back on the list, the focus is on the topic just left (Enter reopens it), or on the first.
+  // Back on the list, the focus is on the topic just left (Enter reopens it), or on the first; from Progress, on its link.
   function goHome() {
+    const from = screen;
     preparing = null; // a load finishing later must not focus the hidden options screen
     renderDaily();
     show('home');
+    if (from === 'progress') return $('btn-progress').focus();
     const cards = [...document.querySelectorAll('#home .topic')];
     (cards.find((card) => card.dataset.topic === topic?.id) || cards[0])?.focus();
+  }
+
+  // ---------- Progress ----------
+
+  // Every topic with its marks and parts (progress.js), each ✓ where marked learnt. Read-only: a topic's line opens its
+  // options, where the marks are set. Rebuilt on every visit; a topic starts open when it has a mark.
+  function openProgress() {
+    const { learnt, total, marked, topics: items } = progress.tree(topics);
+    $('progress-count').textContent = `${learnt} of ${total} parts learnt · ${marked} of ${items.length} topics marked learnt`;
+    $('progress-tree').replaceChildren(...items.map(progressTopic));
+    show('progress');
+    $('progress-tree').querySelector('.check-line').focus();
+  }
+
+  // A topic: a toggle showing or hiding its parts (a spacer without parts), its line, and its options' parts.
+  function progressTopic(item) {
+    const line = el('button', 'check-line');
+    line.dataset.topic = item.id;
+    line.append(el('span', 'check-title', item.title), ...LEARNT.filter((l) => l.kind in item.marks).map((l) => progressMark(l, item.marks[l.kind])));
+    // Which mark no longer fits, where the topic has two.
+    const unfit = LEARNT.filter((l) => item.marks[l.kind] && !item.marks[l.kind].fits).map((l) => l.name);
+    const which = Object.keys(item.marks).length > 1 ? `${unfit.join(' and ')}: ` : '';
+    if (unfit.length) line.append(el('span', 'check-warn', which + daily.UNFIT));
+    line.addEventListener('click', () => openTopic(topics.find((t) => t.id === item.id), true));
+    const row = el('div', 'check-row');
+    const li = el('li');
+    li.append(row);
+    if (!item.options.length) {
+      row.append(el('span', 'check-spacer'), line);
+      return li;
+    }
+    const options = progressParts(item);
+    const toggle = el('button', 'ghost check-toggle');
+    toggle.setAttribute('aria-controls', options.id);
+    toggle.setAttribute('aria-label', `Parts of ${item.title}`);
+    const setOpen = (open) => {
+      options.hidden = !open;
+      toggle.textContent = open ? '▾' : '▸';
+      toggle.setAttribute('aria-expanded', String(open));
+    };
+    toggle.addEventListener('click', () => setOpen(options.hidden));
+    setOpen(item.open);
+    row.append(toggle, line);
+    li.append(options);
+    return li;
+  }
+
+  // A topic's options, each with its parts ✓ or ✗ (and, where the two marks disagree, which one holds it).
+  function progressParts(item) {
+    const options = el('ul', 'check-options');
+    options.id = `progress-parts-${item.id}`;
+    options.append(...item.options.map((opt) => {
+      const parts = el('ul', 'check-parts');
+      parts.append(...opt.parts.map((part) => {
+        const li = el('li', part.learnt ? 'check-part ok' : 'check-part');
+        li.append(tick(part.learnt, part.learnt ? 'Learnt' : 'Not yet'), ' ', part.label);
+        if (part.only) li.append(el('span', 'check-only', ` · ${part.only} only`));
+        return li;
+      }));
+      const li = el('li');
+      li.append(el('span', 'check-option', opt.label), parts);
+      return li;
+    }));
+    return options;
+  }
+
+  // ✓ or ✗, named for screen readers.
+  function tick(on, label) {
+    const span = el('span', 'tick', on ? '✓' : '✗');
+    span.setAttribute('role', 'img');
+    span.setAttribute('aria-label', label);
+    return span;
+  }
+
+  // A topic's Sentences or Table mark; a table narrower than the whole names its scope. The tooltip gives the scope.
+  function progressMark({ kind, name, uses }, mark) {
+    const span = el('span', mark ? 'check-mark ok' : 'check-mark', `${name} `);
+    span.append(tick(!!mark, mark ? 'learnt' : 'not yet'));
+    if (mark && kind === 'table' && !mark.whole) span.append(` (${mark.text})`);
+    if (mark) span.title = `${uses}: ${mark.text}`;
+    return span;
   }
 
   // ---------- Options ----------
@@ -687,6 +770,7 @@
     if (!speakingOn) stopSpeaking();
   });
   for (const button of document.querySelectorAll('.to-topics')) button.addEventListener('click', goHome);
+  $('btn-progress').addEventListener('click', openProgress);
   $('btn-check').addEventListener('click', checkItem);
   $('btn-next').addEventListener('click', nextItem);
   $('btn-quit').addEventListener('click', () => openTopic(topic));

@@ -156,15 +156,24 @@
   // The topics marked learnt for a kind that still offer it (t.sentences, t.table), in the registry's order.
   const learntOf = (kind, topics, all = marks()) => topics.filter((t) => t[kind] && all[t.id]?.[kind]);
 
-  // The learnt topics' marks of a kind, fitted to the options offered now: ready, [{ topic, settings, since }], and a
-  // note on each whose settings no longer fit (leftOut).
+  const UNFIT = 'its learnt settings no longer fit — open it and save them again';
+
+  // A mark's settings fitted to the options offered now, as its daily exercise uses them, and whether they still pass
+  // the topic's checks.
+  function fitMark(t, mark) {
+    const settings = scope.fitSettings(t, mark.settings);
+    return { settings, fits: !scope.settingsProblem(t, settings) };
+  }
+
+  // The learnt topics' marks of a kind, fitted (fitMark): ready, [{ topic, settings, since }], and a note on each whose
+  // settings no longer fit (leftOut).
   function fitLearnt(kind, learnt, all) {
     const ready = [];
     const leftOut = [];
     for (const t of learnt) {
-      const settings = scope.fitSettings(t, all[t.id][kind].settings);
-      if (scope.settingsProblem(t, settings)) leftOut.push(`${t.title}: its learnt settings no longer fit — open it and save them again.`);
-      else ready.push({ topic: t, settings, since: all[t.id][kind].since });
+      const { settings, fits } = fitMark(t, all[t.id][kind]);
+      if (fits) ready.push({ topic: t, settings, since: all[t.id][kind].since });
+      else leftOut.push(`${t.title}: ${UNFIT}.`);
     }
     return { ready, leftOut };
   }
@@ -308,8 +317,8 @@
   }
 
   return {
-    ROLLOVER_HOURS, LENGTHS, KINDS, dayOf,
-    marks, markOf, setMark,
+    ROLLOVER_HOURS, LENGTHS, KINDS, UNFIT, dayOf,
+    marks, markOf, setMark, fitMark,
     log, noteSeen, noteDone, doneToday,
     byLeastRecent, shares, shortWarning, interleave, reviewTopic, tablesTopic,
   };
