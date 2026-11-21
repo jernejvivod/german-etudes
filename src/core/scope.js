@@ -53,5 +53,5 @@
     return parts.every((p) => p.all) ? 'all' : parts.map((p) => p.text).join(' · ');
   }
 
-  return { fitSettings, settingsProblem, scopeOf, sameScope, scopeText };
+  return { choiceValues, fitSettings, settingsProblem, scopeOf, sameScope, scopeText };
 });

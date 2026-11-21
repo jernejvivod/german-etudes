@@ -67,28 +67,35 @@
 
   const times = (v) => (isObject(v) ? Object.fromEntries(Object.entries(v).filter(([, at]) => Number.isFinite(at))) : {});
 
-  function log(kind) {
-    const entry = store.read(DAILY_KEY, null)?.[kind];
+  function entryOf(all, kind) {
+    const entry = isObject(all) ? all[kind] : null;
     return { done: typeof entry?.done === 'string' ? entry.done : null, seen: times(entry?.seen), extra: times(entry?.extra) };
   }
 
-  function writeLog(kind, entry) {
+  function log(kind) {
+    return entryOf(store.read(DAILY_KEY, null), kind);
+  }
+
+  // Changes one kind's log, keeping the others.
+  function updateLog(kind, change) {
     const all = store.read(DAILY_KEY, null);
+    const entry = entryOf(all, kind);
+    change(entry);
     store.write(DAILY_KEY, { ...(isObject(all) ? all : {}), [kind]: entry });
   }
 
   function noteSeen(kind, id, now = Date.now()) {
-    const entry = log(kind);
-    entry.seen[id] = now;
-    writeLog(kind, entry);
+    updateLog(kind, (entry) => {
+      entry.seen[id] = now;
+    });
   }
 
   // The exercise reached its summary; extraIds got one more than their share.
   function noteDone(kind, extraIds, now = Date.now()) {
-    const entry = log(kind);
-    entry.done = dayOf(now);
-    for (const id of extraIds) entry.extra[id] = now;
-    writeLog(kind, entry);
+    updateLog(kind, (entry) => {
+      entry.done = dayOf(now);
+      for (const id of extraIds) entry.extra[id] = now;
+    });
   }
 
   function doneToday(kind, now = Date.now()) {
@@ -151,15 +158,12 @@
     let ready = []; // [{ topic, settings, since }]: the learnt topics this review uses, their scope fitted
     let leftOut = []; // a note on each learnt topic it cannot use
 
-    const learnt = () => {
-      const all = marks();
-      return topics.filter((t) => t.sentences && all[t.id]?.sentences);
-    };
+    const learnt = (all = marks()) => topics.filter((t) => t.sentences && all[t.id]?.sentences);
 
     // Loads the learnt topics' data (each loader once: most topics share vocab.prepare) and checks their scopes.
     async function prepare() {
       const all = marks();
-      const topicsLearnt = learnt();
+      const topicsLearnt = learnt(all);
       const errors = new Map();
       for (const load of new Set(topicsLearnt.map((t) => t.prepare).filter(Boolean))) {
         let error;
@@ -186,7 +190,7 @@
       const byId = new Map(ready.map((r) => [r.topic.id, r]));
       const order = byLeastRecent('sentences', ready.map((r) => r.topic));
       const counts = shares(order.map((t) => t.id), settings.length);
-      const extraIds = order.slice(0, settings.length % order.length).map((t) => t.id);
+      const extraIds = order.filter((t, i) => counts[i] > counts[counts.length - 1]).map((t) => t.id);
       const groups = order.map((t, i) => {
         if (!counts[i]) return [];
         const own = { ...byId.get(t.id).settings, length: counts[i] };

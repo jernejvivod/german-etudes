@@ -36,7 +36,7 @@
   let session = null; // { steps, index }
   let preparing = null; // the topic whose data is still loading, if any
   let prepareError = null;
-  let drill = null; // { step, items, hint, hideTags, index, results: [{ item, grades }] }
+  let drill = null; // { step, items, index, results: [{ item, grades }] }
   let cells = []; // table inputs, block by block, each block column-major
   let cellInfo = new Map(); // input → { idx, b, c, r, gap }
   let blocks = []; // per block { start, rows, cols }
@@ -71,10 +71,6 @@
     input.setAttribute('autocapitalize', 'off');
     input.setAttribute('aria-label', label);
     return input;
-  }
-
-  function choiceValues(opt) {
-    return opt.choices ? opt.choices.map((c) => c.value) : [];
   }
 
   function show(id) {
@@ -286,7 +282,7 @@
             const values = settings[opt.key].filter((v) => v !== choice.value);
             // Keep the topic's choice order so sessions stay predictable.
             if (e.target.checked) values.push(choice.value);
-            setOption(opt.key, choiceValues(opt).filter((v) => values.includes(v)));
+            setOption(opt.key, scope.choiceValues(opt).filter((v) => values.includes(v)));
           }));
         }
       } else if (opt.type === 'toggle') {
@@ -351,10 +347,13 @@
   // ---------- Drill ----------
 
   function startDrill(step) {
-    drill = { step, items: step.items, hint: step.hint || '', hideTags: !!step.hideTags, index: 0, results: [] };
+    drill = { step, items: step.items, index: 0, results: [] };
     show('drill');
     renderItem();
   }
+
+  // An item's own setting first: the Daily review mixes topics in one drill.
+  const hidesTags = (item) => !!(item.hideTags ?? drill.step.hideTags);
 
   function isChecked() {
     return drill.results.length > drill.index;
@@ -372,8 +371,8 @@
     updateProgress();
     $('source').textContent = item.source || '';
     $('source').hidden = !item.source;
-    $('tags').replaceChildren((item.hideTags ?? drill.hideTags) ? '' : tagsFragment(item));
-    $('drill-hint').textContent = item.hint ?? drill.hint;
+    $('tags').replaceChildren(hidesTags(item) ? '' : tagsFragment(item));
+    $('drill-hint').textContent = item.hint ?? drill.step.hint ?? '';
 
     const prompt = $('prompt');
     prompt.hidden = !item.prompt;
@@ -418,7 +417,7 @@
     drill.step.onChecked?.(item, allOk);
     updateProgress();
 
-    if (item.hideTags ?? drill.hideTags) $('tags').replaceChildren(tagsFragment(item));
+    if (hidesTags(item)) $('tags').replaceChildren(tagsFragment(item));
 
     const answer = el('p', 'answer');
     answer.append(answerFragment(item));
