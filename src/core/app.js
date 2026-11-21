@@ -1,16 +1,23 @@
 // App shell: topic picker, topic options, and the generic drill / summary / table steps.
 //
-// A topic is { id, title, subtitle, intro, defaults, options, validate?, prepare?, sentences?, listing?,
+// A topic is { id, title, subtitle, intro, defaults, options, validate?, prepare?, sentences?, table?, listing?,
 //   sessions: [{ label, build(settings, rnd?) → steps }] }
 //   intro: text, or settings → text; prepare: async, loads the topic's data when it is opened and resolves to an error or null
-//   options: [{ key, label, type: 'radio' | 'checkboxes' | 'toggle', choices?, text?, min?, inline?, round?, daily? }]
+//   options: [{ key, label, type: 'radio' | 'checkboxes' | 'toggle', choices?, text?, min?, inline?, round?, daily?, table? }]
 //     round: shapes only the topic's own round (its length …), so it is not part of what is marked learnt (scope.js);
-//     daily: the value the Daily review always uses (My Anki words), so not part of it either
+//     daily: the value the Daily review always uses (My Anki words), so not part of it either;
+//     table: true (or value → the part of it the table holds) when the topic's table depends on it, so it is part of
+//     what is marked Table learnt
 //   sentences(settings, n, rnd): a drill step of n sentences in the settings' scope; a topic that has it can be marked
 //     Sentences learnt and comes up in the Daily review (daily.js)
-//   listing(settings): [{ title, text }] rows shown under the intro (the Daily review's learnt topics)
-// A step is { type: 'drill', label, items, hint?, hideTags?, onChecked?, onDone? } or { type: 'table', label, table }.
-//   onChecked(item, ok) runs after each item is checked, onDone() when the drill reaches its summary.
+//   table(settings, rnd): the table step of the topic's fixed table (the one its "… only" session gives), which can be
+//     learnt by heart; a topic that has it can be marked Table learnt and comes up in Daily tables (daily.js)
+//   listing(settings): [{ title, text }] rows shown under the intro (a daily exercise's learnt topics)
+// A step is { type: 'drill', label, items, hint?, hideTags?, onChecked?, onDone? } or
+//   { type: 'table', label, table, topicTitle?, onChecked? }.
+//   A drill's onChecked(item, ok) runs after each item is checked, onDone() when the drill reaches its summary.
+//   A table's onChecked({ correct, total }) runs after each check; topicTitle names the topic it comes from (Daily
+//   tables), shown above it.
 // A drill item may bring its own hint, hideTags and topicTitle (the topic it comes from, shown above it): the Daily
 // review mixes topics in one drill.
 // A drill item may name the Anki notes it uses (notes): once it is checked right they count as shown (vocab.markShown),
@@ -24,11 +31,12 @@
   const $ = (id) => document.getElementById(id);
 
   // The daily exercises, shown above the topics.
-  const dailies = [daily.reviewTopic(topics)];
+  const dailies = [daily.reviewTopic(topics), daily.tablesTopic(topics)];
 
-  // What a topic can be marked learnt for, in the daily exercises.
+  // What a topic can be marked learnt for, in the daily exercises; uses: how the note on another scope starts.
   const LEARNT = [
-    { kind: 'sentences', label: 'Sentences learnt', detail: 'comes up in the Daily review with these settings', has: (t) => !!t.sentences },
+    { kind: 'sentences', label: 'Sentences learnt', detail: 'comes up in the Daily review with these settings', uses: 'The Daily review uses', has: (t) => !!t.sentences },
+    { kind: 'table', label: 'Table learnt', detail: 'comes up in Daily tables with these settings', uses: 'Daily tables use', has: (t) => !!t.table },
   ];
 
   let screen = 'home';
@@ -155,15 +163,15 @@
     }
   }
 
-  // The daily exercises' cards: done today, or how many topics are marked learnt. Rebuilt on every return home, as
-  // the marks and the day change.
+  // The daily exercises' cards: done today, or how many topics (tables) are marked learnt. Rebuilt on every return
+  // home, as the marks and the day change.
   function renderDaily() {
     $('daily').replaceChildren(...dailies.map((t) => {
       const done = daily.doneToday(t.kind);
       const count = t.learnt().length;
       const card = el('button', done ? 'topic daily done' : 'topic daily');
       card.dataset.topic = t.id;
-      const sub = done ? 'Done today ✓' : count ? `${count} learnt topic${count === 1 ? '' : 's'} · not done yet today` : 'No topic marked learnt yet';
+      const sub = done ? 'Done today ✓' : count ? `${count} learnt ${t.unit}${count === 1 ? '' : 's'} · not done yet today` : `No ${t.unit} marked learnt yet`;
       card.append(el('span', 'topic-title', t.title), el('span', 'topic-sub', sub));
       card.addEventListener('click', () => openTopic(t, true));
       return card;
@@ -226,25 +234,26 @@
     $('options-listing').hidden = !rows.length;
   }
 
-  // The Sentences learnt switch (topics with sentences): on, it saves the settings' scope for the Daily review. The
-  // scope changes only on purpose: while it differs from the settings, a note says which one is used.
+  // The Sentences learnt and Table learnt switches (topics with sentences, a table): on, each saves its part of the
+  // settings (scope.js) for its daily exercise. The scope changes only on purpose: while it differs from the settings,
+  // a note says which one is used.
   function renderLearnt() {
     const box = $('options-learnt');
     const kinds = LEARNT.filter((l) => l.has(topic));
     box.hidden = !kinds.length;
-    box.replaceChildren(el('legend', null, 'Daily review'));
-    for (const { kind, label, detail } of kinds) {
+    box.replaceChildren(el('legend', null, 'Daily exercises'));
+    for (const { kind, label, detail, uses } of kinds) {
       const mark = daily.markOf(topic.id, kind);
       const name = `learnt-${kind}`;
       const setMark = (on) => {
-        daily.setMark(topic.id, kind, on ? scope.scopeOf(topic, settings) : null);
+        daily.setMark(topic.id, kind, on ? scope.scopeOf(topic, settings, kind) : null);
         renderLearnt();
         validateOptions();
         box.querySelector(`input[name="${name}"]`).focus(); // the re-render dropped the focused control
       };
       box.append(choiceLabel('checkbox', name, { label, detail }, !!mark, (e) => setMark(e.target.checked)));
-      if (mark && !scope.sameScope(topic, mark.settings, settings)) {
-        const note = el('p', 'learnt-note', `The Daily review uses: ${scope.scopeText(topic, scope.fitSettings(topic, mark.settings))}.`);
+      if (mark && !scope.sameScope(topic, mark.settings, settings, kind)) {
+        const note = el('p', 'learnt-note', `${uses}: ${scope.scopeText(topic, scope.fitSettings(topic, mark.settings), kind)}.`);
         const use = el('button', null, 'Use these settings');
         use.type = 'button';
         use.addEventListener('click', () => setMark(true));
@@ -480,6 +489,8 @@
   function startTable(step) {
     wrapped = false;
     const spec = step.table;
+    $('table-source').textContent = step.topicTitle || '';
+    $('table-source').hidden = !step.topicTitle;
     $('table-title').textContent = spec.title;
     $('table-lead').textContent = spec.lead;
     const container = $('tables');
@@ -574,7 +585,8 @@
   }
 
   function checkTable() {
-    const tableEndings = session.steps[session.index].table.endings;
+    const step = session.steps[session.index];
+    const tableEndings = step.table.endings;
     let correct = 0;
     for (const input of cells) {
       removeFix(input);
@@ -591,6 +603,7 @@
     const score = $('table-score');
     score.textContent = `${correct} / ${cells.length} ${perfect ? '— perfekt!' : 'correct'}`;
     score.hidden = false;
+    step.onChecked?.({ correct, total: cells.length });
     $('btn-table-retry').hidden = perfect;
     (perfect ? $('btn-table-next') : $('btn-table-retry')).focus();
   }

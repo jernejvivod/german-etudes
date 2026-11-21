@@ -11,7 +11,7 @@
 <main>
   <section id="home" class="screen">
     <h1>German Etudes</h1>
-    <p class="lead">Short daily drills. Pick today's topic, or mix the ones you have marked learnt in the Daily review.</p>
+    <p class="lead">Short daily drills. Pick today's topic, or go over the ones you have marked learnt: their sentences in the Daily review, their tables in Daily tables.</p>
     <div id="daily" class="topics"></div>
     <div id="topics" class="topics"></div>
     <label class="setting" id="speak-setting" hidden><input type="checkbox" id="speak-toggle"> Read the solved sentence aloud after checking · <kbd>L</kbd> replays it</label>
@@ -67,6 +67,7 @@
     <header class="bar">
       <button class="ghost back to-topics" title="All topics (⇧Esc)" aria-label="Back to topics" aria-keyshortcuts="Shift+Escape">← Topics</button>
     </header>
+    <p id="table-source" class="source" hidden></p>
     <h2 id="table-title"></h2>
     <p class="lead"><span id="table-lead"></span> <kbd>↵</kbd> or <kbd>Tab</kbd> goes down the column, arrows move around.</p>
     <div id="tables" class="tables"></div>
