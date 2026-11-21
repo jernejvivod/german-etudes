@@ -16,6 +16,8 @@ npm test    # the tests
 
 On macOS, solved sentences can be read aloud with the system's German voice.
 
+Esc goes up one level (round → options → topic list), ⇧Esc straight to the topic list; during a round either needs a second press.
+
 ## Anki decks
 
 `tools/` builds extra Anki packages (`.apkg`), such as Partizip II, Präpositionen and the B1 words missing from the deck. Each script's header says how to run it.

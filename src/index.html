@@ -17,7 +17,7 @@
   </section>
 
   <section id="options" class="screen" hidden>
-    <button id="btn-home" class="ghost back" title="All topics (Esc)">← Topics</button>
+    <button id="btn-home" class="ghost back to-topics" title="All topics (Esc)" aria-keyshortcuts="Escape Shift+Escape">← Topics</button>
     <h1 id="options-title"></h1>
     <p id="options-intro" class="lead"></p>
     <div id="options-form" class="options"></div>
@@ -27,7 +27,8 @@
 
   <section id="drill" class="screen" hidden>
     <header class="bar">
-      <button id="btn-quit" class="ghost" title="Back to options (Esc)">✕</button>
+      <button class="ghost back to-topics" title="All topics (⇧Esc)" aria-label="Back to topics" aria-keyshortcuts="Shift+Escape">← Topics</button>
+      <button id="btn-quit" class="ghost" title="Back to options (Esc twice)" aria-label="Back to options">✕</button>
       <div class="progress"><div id="progress-fill"></div></div>
       <span id="progress-text" class="muted"></span>
     </header>
@@ -47,6 +48,9 @@
   </section>
 
   <section id="summary" class="screen" hidden>
+    <header class="bar">
+      <button class="ghost back to-topics" title="All topics (⇧Esc)" aria-label="Back to topics" aria-keyshortcuts="Shift+Escape">← Topics</button>
+    </header>
     <h2>Sentences done</h2>
     <p id="summary-score" class="score"></p>
     <ol id="mistakes" class="mistakes" lang="de"></ol>
@@ -56,6 +60,9 @@
   </section>
 
   <section id="table" class="screen" hidden>
+    <header class="bar">
+      <button class="ghost back to-topics" title="All topics (⇧Esc)" aria-label="Back to topics" aria-keyshortcuts="Shift+Escape">← Topics</button>
+    </header>
     <h2 id="table-title"></h2>
     <p class="lead"><span id="table-lead"></span> <kbd>↵</kbd> or <kbd>Tab</kbd> goes down the column, arrows move around.</p>
     <div id="tables" class="tables"></div>
@@ -66,9 +73,10 @@
       <button id="btn-table-next"></button>
     </div>
   </section>
-  <p id="toast" class="toast" hidden>Press Esc again to quit this round</p>
+  <p id="toast" class="toast" role="status" aria-live="polite" hidden></p>
 </main>
 <script src="core/cloze.js"></script>
+<script src="core/nav.js"></script>
 <script src="core/store.js"></script>
 <script src="core/declension.js"></script>
 <script src="core/lexicon.js"></script>

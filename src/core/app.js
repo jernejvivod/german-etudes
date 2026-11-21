@@ -11,7 +11,7 @@
 (function () {
   'use strict';
 
-  const { cloze, topics, vocab, store } = window.Etudes;
+  const { cloze, nav, topics, vocab, store } = window.Etudes;
   const $ = (id) => document.getElementById(id);
 
   let screen = 'home';
@@ -73,6 +73,7 @@
 
   function show(id) {
     stopSpeaking(); // another screen (Esc, summary, table) ends the sentence being read
+    disarmEscape(); // a round left by a click no longer waits for a second Esc
     screen = id;
     for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== id;
   }
@@ -144,15 +145,19 @@
     list.replaceChildren();
     for (const t of topics) {
       const card = el('button', 'topic');
+      card.dataset.topic = t.id;
       card.append(el('span', 'topic-title', t.title), el('span', 'topic-sub', t.subtitle));
       card.addEventListener('click', () => openTopic(t, true));
       list.append(card);
     }
   }
 
+  // Back on the list, the focus is on the topic just left (Enter reopens it), or on the first.
   function goHome() {
+    preparing = null; // a load finishing later must not focus the hidden options screen
     show('home');
-    $('topics').querySelector('button')?.focus();
+    const cards = [...$('topics').children];
+    (cards.find((card) => card.dataset.topic === topic?.id) || cards[0])?.focus();
   }
 
   // ---------- Options ----------
@@ -542,29 +547,35 @@
 
   // ---------- Wiring ----------
 
-  // Esc on a drill or table quits the session, so it needs a second press within 2 s.
-  let escTimer = null;
+  // Esc goes up one level, Shift+Esc to the topic list (nav.js). On a drill or table either quits the round, so it needs a
+  // second press of the same key within 2 s.
+  let armed = null; // { target: 'options' | 'home', timer }
+  const ARMED_TEXT = { options: 'Press Esc again to quit this round', home: 'Press ⇧Esc again to go to the topic list' };
 
   function disarmEscape() {
-    clearTimeout(escTimer);
-    escTimer = null;
+    if (armed) clearTimeout(armed.timer);
+    armed = null;
     $('toast').hidden = true;
   }
 
-  function onEscape() {
-    if (screen === 'options') return goHome();
-    if (screen === 'home') return;
-    if (screen === 'summary' || escTimer) {
-      disarmEscape();
-      return openTopic(topic);
-    }
-    $('toast').hidden = false;
-    escTimer = setTimeout(disarmEscape, 2000);
+  function onEscape(toTopics) {
+    const action = nav.escapeAction(screen, toTopics, armed?.target);
+    if (!action) return;
+    if (action.go === 'home') return goHome();
+    if (action.go === 'options') return openTopic(topic);
+    disarmEscape();
+    armed = { target: action.arm, timer: setTimeout(disarmEscape, 2000) };
+    $('toast').hidden = false; // shown before the text changes, so screen readers announce it
+    $('toast').textContent = ARMED_TEXT[action.arm];
   }
 
   function onKey(e) {
     if (e.isComposing) return;
-    if (e.key === 'Escape') return onEscape();
+    // A held Esc would arm and leave in one press; Ctrl / Alt / Cmd+Esc belong to the system.
+    if (e.key === 'Escape') {
+      if (!e.repeat && !e.ctrlKey && !e.altKey && !e.metaKey) onEscape(e.shiftKey);
+      return;
+    }
     // L replays the solved sentence (the inputs are read-only once checked, so it types nothing).
     if (screen === 'drill' && isChecked() && e.key?.toLowerCase() === 'l' && !e.metaKey && !e.ctrlKey) {
       e.preventDefault();
@@ -597,7 +608,7 @@
     store.write(SPEAK_KEY, speakingOn);
     if (!speakingOn) stopSpeaking();
   });
-  $('btn-home').addEventListener('click', goHome);
+  for (const button of document.querySelectorAll('.to-topics')) button.addEventListener('click', goHome);
   $('btn-check').addEventListener('click', checkItem);
   $('btn-next').addEventListener('click', nextItem);
   $('btn-quit').addEventListener('click', () => openTopic(topic));

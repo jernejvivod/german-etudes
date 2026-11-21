@@ -126,7 +126,6 @@ kbd {
 }
 .topic-title { font-size: 20px; }
 .topic-sub { font-weight: 400; color: var(--muted); }
-.back { margin-left: -10px; }
 .setting { display: flex; gap: 8px; align-items: center; margin-top: 24px; color: var(--muted); cursor: pointer; }
 .setting input { accent-color: var(--accent); }
 .setting[hidden] { display: none; }
@@ -164,8 +163,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid color-mix(in srgb
 button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
 button.ghost { border: none; background: none; padding: 6px 10px; color: var(--muted); }
 
-/* Drill */
+/* Top bar: ← Topics on every screen but the list; a drill adds ✕ and the progress. */
+.back { margin-left: -10px; } /* the text lines up with the content below */
 .bar { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.bar .back + .ghost { margin-left: -8px; } /* ✕ belongs with ← Topics, not with the progress */
+
+/* Drill */
 .progress { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
 #progress-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.25s ease; }
 
