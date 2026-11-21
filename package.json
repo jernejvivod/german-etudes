@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "start": "electron .",
+    "start:clean": "node tools/start-clean.js",
     "test": "node --test test/*.test.js",
     "test:e2e": "node --test test/e2e/*.e2e.js",
     "icon": "electron tools/render-icon.js",
