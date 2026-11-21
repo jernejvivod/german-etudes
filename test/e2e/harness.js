@@ -106,9 +106,14 @@ function driver(send, dir, saidPath) {
     assert.equal(await screen(), 'options');
     await waitFor(`document.getElementById('options-intro').textContent !== 'Loading…'`, `${id}'s options to be ready`, 15000);
   }
+  // A choice on the options screen by its label (Perfekt, der-words …).
+  const choose = (label) => evaluate(`[...document.querySelectorAll('#options label.radio')]
+    .find((l) => l.querySelector('b').textContent === ${JSON.stringify(label)}).querySelector('input').click()`);
+  // The learnt marks as stored.
+  const learnt = () => evaluate(`JSON.parse(localStorage.getItem('etudes-learnt'))`);
   const said = () => (fs.existsSync(saidPath) ? fs.readFileSync(saidPath, 'utf8').split('\n').filter(Boolean) : []);
   const ranOnTempProfile = () => fs.existsSync(path.join(dir, 'ud', 'Local Storage'));
-  return { send, evaluate, waitFor, screen, focused, toast, click, text, key, shot, openTopic, said, ranOnTempProfile };
+  return { send, evaluate, waitFor, screen, focused, toast, click, text, key, shot, openTopic, choose, learnt, said, ranOnTempProfile };
 }
 
 // Starts the app on a throwaway profile, waits for its topic list and German voice, runs fn(app) and closes it again.

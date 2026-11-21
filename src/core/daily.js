@@ -156,7 +156,18 @@
   // The topics marked learnt for a kind that still offer it (t.sentences, t.table), in the registry's order.
   const learntOf = (kind, topics, all = marks()) => topics.filter((t) => t[kind] && all[t.id]?.[kind]);
 
-  const unfitNote = (t) => `${t.title}: its learnt settings no longer fit — open it and save them again.`;
+  // The learnt topics' marks of a kind, fitted to the options offered now: ready, [{ topic, settings, since }], and a
+  // note on each whose settings no longer fit (leftOut).
+  function fitLearnt(kind, learnt, all) {
+    const ready = [];
+    const leftOut = [];
+    for (const t of learnt) {
+      const settings = scope.fitSettings(t, all[t.id][kind].settings);
+      if (scope.settingsProblem(t, settings)) leftOut.push(`${t.title}: its learnt settings no longer fit — open it and save them again.`);
+      else ready.push({ topic: t, settings, since: all[t.id][kind].since });
+    }
+    return { ready, leftOut };
+  }
 
   // ---------- The Daily review ----------
 
@@ -183,15 +194,9 @@
         }
         errors.set(load, error || null);
       }
-      ready = [];
-      leftOut = [];
-      for (const t of topicsLearnt) {
-        const settings = scope.fitSettings(t, all[t.id].sentences.settings);
-        const error = errors.get(t.prepare);
-        if (error) leftOut.push(`${t.title}: ${error}`);
-        else if (scope.settingsProblem(t, settings)) leftOut.push(unfitNote(t));
-        else ready.push({ topic: t, settings, since: all[t.id].sentences.since });
-      }
+      const failed = topicsLearnt.filter((t) => errors.get(t.prepare));
+      ({ ready, leftOut } = fitLearnt('sentences', topicsLearnt.filter((t) => !failed.includes(t)), all));
+      leftOut.unshift(...failed.map((t) => `${t.title}: ${errors.get(t.prepare)}`));
       return null;
     }
 
@@ -250,18 +255,12 @@
     // table, or whose settings no longer fit.
     function usable() {
       const all = marks();
-      const fitted = new Map(); // topic → settings
-      const leftOut = Object.keys(all)
+      const gone = Object.keys(all)
         .filter((id) => all[id].table && !topics.some((t) => t.id === id && t.table))
         .map((id) => `${topics.find((t) => t.id === id)?.title ?? id}: there is no such table any more.`);
-      for (const t of learnt(all)) {
-        const settings = scope.fitSettings(t, all[t.id].table.settings);
-        if (scope.settingsProblem(t, settings)) leftOut.push(unfitNote(t));
-        else fitted.set(t, settings);
-      }
-      const ready = byLeastRecent('table', [...fitted.keys()])
-        .map((t) => ({ topic: t, settings: fitted.get(t), since: all[t.id].table.since }));
-      return { ready, leftOut };
+      const { ready, leftOut } = fitLearnt('table', learnt(all), all);
+      const order = byLeastRecent('table', ready.map((r) => r.topic));
+      return { ready: order.map((t) => ready.find((r) => r.topic === t)), leftOut: [...gone, ...leftOut] };
     }
 
     function build(settings, rnd = Math.random) {

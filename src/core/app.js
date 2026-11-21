@@ -33,10 +33,11 @@
   // The daily exercises, shown above the topics.
   const dailies = [daily.reviewTopic(topics), daily.tablesTopic(topics)];
 
-  // What a topic can be marked learnt for, in the daily exercises; uses: how the note on another scope starts.
+  // What a topic can be marked learnt for, in the daily exercises: a topic with sentences or a table (t[kind]). uses:
+  // how the note on another scope starts.
   const LEARNT = [
-    { kind: 'sentences', label: 'Sentences learnt', detail: 'comes up in the Daily review with these settings', uses: 'The Daily review uses', has: (t) => !!t.sentences },
-    { kind: 'table', label: 'Table learnt', detail: 'comes up in Daily tables with these settings', uses: 'Daily tables use', has: (t) => !!t.table },
+    { kind: 'sentences', label: 'Sentences learnt', detail: 'comes up in the Daily review with these settings', uses: 'The Daily review uses' },
+    { kind: 'table', label: 'Table learnt', detail: 'comes up in Daily tables with these settings', uses: 'Daily tables use' },
   ];
 
   let screen = 'home';
@@ -239,11 +240,12 @@
   // a note says which one is used.
   function renderLearnt() {
     const box = $('options-learnt');
-    const kinds = LEARNT.filter((l) => l.has(topic));
+    const kinds = LEARNT.filter((l) => topic[l.kind]);
     box.hidden = !kinds.length;
     box.replaceChildren(el('legend', null, 'Daily exercises'));
+    const own = daily.marks()[topic.id];
     for (const { kind, label, detail, uses } of kinds) {
-      const mark = daily.markOf(topic.id, kind);
+      const mark = own?.[kind];
       const name = `learnt-${kind}`;
       const setMark = (on) => {
         daily.setMark(topic.id, kind, on ? scope.scopeOf(topic, settings, kind) : null);

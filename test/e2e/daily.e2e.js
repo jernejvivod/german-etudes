@@ -9,11 +9,7 @@ const { withApp, skip } = require('./harness.js');
 const { dayOf } = require('../../src/core/daily.js');
 
 test('marking topics learnt and the Daily review', { timeout: 120000, skip }, () => withApp(async (app) => {
-  const { evaluate, waitFor, screen, focused, click, text, key, shot, openTopic, said } = app;
-  // A choice on the options screen by its label (Perfekt, Short …).
-  const choose = (label) => evaluate(`[...document.querySelectorAll('#options label.radio')]
-    .find((l) => l.querySelector('b').textContent === ${JSON.stringify(label)}).querySelector('input').click()`);
-  const learnt = () => evaluate(`JSON.parse(localStorage.getItem('etudes-learnt'))`);
+  const { evaluate, waitFor, screen, focused, click, text, key, shot, openTopic, choose, learnt, said } = app;
   const note = () => evaluate(`document.querySelector('#options-learnt .learnt-note')?.textContent ?? null`);
   const card = () => text('#daily [data-topic="daily"] .topic-sub');
   const tagsShown = () => evaluate(`document.getElementById('tags').childElementCount > 0`);

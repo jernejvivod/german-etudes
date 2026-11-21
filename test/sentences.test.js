@@ -6,10 +6,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { gaps } = require('../src/core/cloze.js');
 const V = require('../src/core/vocab.js');
-const { mulberry32, isolateStorage, ankiNote } = require('./helpers.js');
+const { mulberry32, isolateStorage, ankiNote, registry } = require('./helpers.js');
 
-const TOPICS = ['adjectives', 'passive', 'prepositions', 'determiners', 'pronouns', 'verbforms', 'wordorder', 'nominal', 'fvg', 'anki']
-  .map((id) => require(`../src/topics/${id}.js`));
+const TOPICS = registry();
 const anki = TOPICS.find((t) => t.id === 'anki');
 // The topics whose Hints switch shows the tags before checking (Nominalisierung's shows the noun in the gap instead).
 const HIDING = ['adjectives', 'determiners', 'prepositions', 'pronouns', 'wordorder', 'anki'];

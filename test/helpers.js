@@ -51,4 +51,8 @@ function ankiNote(word, fields = {}) {
   return { id: word, article: '', word, pos: 'n', english: '', headings: [], examples: [], dueIn: 0, lapses: 0, ease: 2500, ...fields };
 }
 
-module.exports = { mulberry32, findItem, fakeStorage, isolateStorage, ankiNote };
+// Every topic, in the app's order (the scripts in index.html).
+const registry = () => ['adjectives', 'passive', 'prepositions', 'determiners', 'pronouns', 'verbforms', 'wordorder', 'nominal', 'fvg', 'anki']
+  .map((id) => require(`../src/topics/${id}.js`));
+
+module.exports = { mulberry32, findItem, fakeStorage, isolateStorage, ankiNote, registry };

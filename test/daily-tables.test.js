@@ -7,11 +7,9 @@ const assert = require('node:assert/strict');
 const D = require('../src/core/daily.js');
 const S = require('../src/core/scope.js');
 const store = require('../src/core/store.js');
-const { mulberry32, fakeStorage, isolateStorage } = require('./helpers.js');
+const { mulberry32, fakeStorage, isolateStorage, registry } = require('./helpers.js');
 
-// The registry, in the app's order (index.html).
-const TOPICS = ['adjectives', 'passive', 'prepositions', 'determiners', 'pronouns', 'verbforms', 'wordorder', 'nominal', 'fvg', 'anki']
-  .map((id) => require(`../src/topics/${id}.js`));
+const TOPICS = registry();
 const byId = Object.fromEntries(TOPICS.map((t) => [t.id, t]));
 const WITH_TABLE = TOPICS.filter((t) => t.table);
 const { adjectives, passive, prepositions, determiners, pronouns } = byId;
