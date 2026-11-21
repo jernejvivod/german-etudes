@@ -34,10 +34,10 @@
   const dailies = [daily.reviewTopic(topics), daily.tablesTopic(topics)];
 
   // What a topic can be marked learnt for, in the daily exercises: a topic with sentences or a table (t[kind]). name: the
-  // mark on the Progress screen; label: it in a sentence ("learnt for the table").
+  // mark on the Progress screen; label: it in a sentence ("learnt for the table"); exercise: the daily exercise it feeds.
   const LEARNT = [
-    { kind: 'sentences', name: 'Sentences', label: 'sentences' },
-    { kind: 'table', name: 'Table', label: 'the table' },
+    { kind: 'sentences', name: 'Sentences', label: 'sentences', exercise: 'the Daily review' },
+    { kind: 'table', name: 'Table', label: 'the table', exercise: 'Daily tables' },
   ];
 
   let screen = 'home';
@@ -218,9 +218,9 @@
     const kinds = LEARNT.filter((l) => l.kind in item.marks);
     const line = el('div', 'check-line');
     line.append(title, ...kinds.map((l) => progressSwitch(item, l)));
-    for (const { kind, name } of kinds) {
+    for (const { kind, name, exercise } of kinds) {
       const { state, problem } = item.marks[kind];
-      const warn = state === 'partly' ? `Only partly marked — ${problem}.` : problem;
+      const warn = state === 'partly' ? `Not in ${exercise} yet — ${problem}.` : problem;
       if (warn) line.append(el('span', 'check-warn', kinds.length > 1 ? `${name}: ${warn}` : warn));
     }
     const row = el('div', 'check-row');
@@ -409,10 +409,10 @@
   }
 
   // A kind's mark (progress.tree's, with the settings shown) in words; warn: it keeps the topic out of its daily exercise.
-  function markText({ label }, { state, total, text: parts, problem }) {
+  function markText({ label, exercise }, { state, total, text: parts, problem }) {
     const text = total ? `: ${parts}` : '';
     if (state === 'none') return { text: `Not learnt for ${label} yet` };
-    if (state === 'partly') return { text: `Partly learnt for ${label}${text} — ${problem}`, warn: true };
+    if (state === 'partly') return { text: `Partly learnt for ${label}${text} — not in ${exercise} until you ${problem}`, warn: true };
     if (state === 'unfit') return { text: `Learnt for ${label}, but: ${problem}`, warn: true };
     return { text: `Learnt for ${label}${text}` };
   }

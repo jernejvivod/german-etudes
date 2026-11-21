@@ -224,7 +224,7 @@
       const mark = all[t.id][kind];
       const { state, settings, problem } = stateOf(t, kind, mark);
       if (state === 'learnt') ready.push({ topic: t, settings, since: mark.since });
-      else leftOut.push(`${t.title}: ${state === 'partly' ? `only partly marked — ${problem} in Progress.` : problem}`);
+      else leftOut.push(`${t.title}: ${state === 'partly' ? `left out until you ${problem} in Progress.` : problem}`);
     }
     return { ready, leftOut };
   }

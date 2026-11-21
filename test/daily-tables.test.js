@@ -169,7 +169,7 @@ test('Daily tables leaves out the marks it cannot use and says why', () => {
   assert.equal(tables.validate({}), 'None of the learnt tables can be used — see above.');
   assert.deepEqual(tables.listing({}), []);
   D.setMark('passive', 'table', { tenses: ['perf'] });
-  assert.match(tables.intro({}), / Passiv: only partly marked — tick at least one of Kind of passive in Progress\.$/);
+  assert.match(tables.intro({}), / Passiv: left out until you tick at least one of Kind of passive in Progress\.$/);
   D.setMark('pronouns', 'table', { kinds: ['relative'] });
   assert.equal(tables.validate({}), null);
   assert.deepEqual(tables.sessions[0].build({}).map((s) => s.topicTitle), ['Pronomen']);

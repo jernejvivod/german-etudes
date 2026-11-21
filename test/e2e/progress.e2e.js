@@ -36,7 +36,7 @@ test('marking parts learnt on Progress', { timeout: 120000, skip }, () => withAp
   assert.equal(await count(), counted(1, 1));
   assert.deepEqual(await box('progress-passive-sentences'), { checked: false, mixed: true });
   assert.equal(await countOf('progress-passive-sentences'), '1/9');
-  assert.deepEqual(await warn('passive'), ['Sentences: Only partly marked — tick at least one of Tenses.']);
+  assert.deepEqual(await warn('passive'), ['Sentences: Not in the Daily review yet — tick at least one of Tenses.']);
   assert.equal(await focused(), 'Vorgangspassiv learnt for sentences', 'the focus stays on the box');
   await tickPart('passive', 'sentences', 'tenses', 'praet');
   assert.deepEqual(await warn('passive'), []);

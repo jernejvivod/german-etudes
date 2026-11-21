@@ -301,7 +301,7 @@ test('the Daily review loads each loader once, in turn, and leaves out the topic
   ]);
   assert.equal(review.intro({ length: 10 }), 'Every learnt topic comes up today, in equal shares, mixed. '
     + 'C: Anki is not there. '
-    + 'D: only partly marked — tick at least one of More in Progress. '
+    + 'D: left out until you tick at least one of More in Progress. '
     + 'E: No hints here.');
 
   // Every learnt topic left out: Start stays off.
