@@ -630,7 +630,7 @@
         ],
       },
       {
-        key: 'vocab', label: 'Sentences', type: 'radio', choices: [
+        key: 'vocab', label: 'Sentences', type: 'radio', daily: 'anki', choices: [
           { value: 'anki', label: 'My Anki sentences', detail: 'example sentences of your learnt cards, built-in ones for the rest' },
           { value: 'builtin', label: 'Built-in' },
         ],

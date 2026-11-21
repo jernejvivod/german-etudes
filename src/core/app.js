@@ -3,15 +3,16 @@
 // A topic is { id, title, subtitle, intro, defaults, options, validate?, prepare?, sentences?, listing?,
 //   sessions: [{ label, build(settings, rnd?) → steps }] }
 //   intro: text, or settings → text; prepare: async, loads the topic's data when it is opened and resolves to an error or null
-//   options: [{ key, label, type: 'radio' | 'checkboxes' | 'toggle', choices?, text?, min?, inline?, round? }]
-//     round: shapes only the topic's own round (its length …), so it is not part of what is marked learnt (scope.js)
+//   options: [{ key, label, type: 'radio' | 'checkboxes' | 'toggle', choices?, text?, min?, inline?, round?, daily? }]
+//     round: shapes only the topic's own round (its length …), so it is not part of what is marked learnt (scope.js);
+//     daily: the value the Daily review always uses (My Anki words), so not part of it either
 //   sentences(settings, n, rnd): a drill step of n sentences in the settings' scope; a topic that has it can be marked
 //     Sentences learnt and comes up in the Daily review (daily.js)
 //   listing(settings): [{ title, text }] rows shown under the intro (the Daily review's learnt topics)
 // A step is { type: 'drill', label, items, hint?, hideTags?, onChecked?, onDone? } or { type: 'table', label, table }.
 //   onChecked(item, ok) runs after each item is checked, onDone() when the drill reaches its summary.
-// A drill item may bring its own hint, hideTags and source (the topic it comes from, shown above it): the Daily review
-// mixes topics in one drill.
+// A drill item may bring its own hint, hideTags and topicTitle (the topic it comes from, shown above it): the Daily
+// review mixes topics in one drill.
 // A drill item may name the Anki notes it uses (notes): once it is checked right they count as shown (vocab.markShown),
 // so the next rounds bring other cards; checked wrong, they are not held back (vocab.markMissed).
 // A table cell's answer is a string or a list of accepted strings (the first is shown as the correction); a block with
@@ -238,6 +239,7 @@
       const setMark = (on) => {
         daily.setMark(topic.id, kind, on ? scope.scopeOf(topic, settings) : null);
         renderLearnt();
+        validateOptions();
         box.querySelector(`input[name="${name}"]`).focus(); // the re-render dropped the focused control
       };
       box.append(choiceLabel('checkbox', name, { label, detail }, !!mark, (e) => setMark(e.target.checked)));
@@ -313,13 +315,13 @@
   }
 
   // Shows the first problem with the settings (or the topic's data) and disables the start buttons, and marking them
-  // learnt, while there is one.
+  // learnt (a mark can still be removed), while there is one.
   function validateOptions() {
     const error = preparing ? null : prepareError || scope.settingsProblem(topic, settings);
     $('options-error').textContent = error || '';
     $('options-error').hidden = !error;
     for (const button of $('options-actions').querySelectorAll('button')) button.disabled = !!error || preparing;
-    $('options-learnt').disabled = !!error || !!preparing;
+    for (const control of $('options-learnt').querySelectorAll('input:not(:checked), button')) control.disabled = !!error || !!preparing;
     return !error && !preparing;
   }
 
@@ -369,8 +371,8 @@
 
     $('progress-text').textContent = `${drill.index + 1} / ${drill.items.length}`;
     updateProgress();
-    $('source').textContent = item.source || '';
-    $('source').hidden = !item.source;
+    $('source').textContent = item.topicTitle || '';
+    $('source').hidden = !item.topicTitle;
     $('tags').replaceChildren(hidesTags(item) ? '' : tagsFragment(item));
     $('drill-hint').textContent = item.hint ?? drill.step.hint ?? '';
 
@@ -461,7 +463,7 @@
       sent.append(answerFragment(item));
       const wrong = grades.filter((g) => !g.ok).map((g) => cloze.typed(g.gap, g.value));
       const meta = el('div', 'meta');
-      meta.append(`${[item.source, ...item.tags.map((t) => t.text)].filter(Boolean).join(' · ')} — you wrote `, el('span', 'given', wrong.join(', ')));
+      meta.append(`${[item.topicTitle, ...item.tags.map((t) => t.text)].filter(Boolean).join(' · ')} — you wrote `, el('span', 'given', wrong.join(', ')));
       const li = el('li');
       li.append(sent, meta);
       list.append(li);

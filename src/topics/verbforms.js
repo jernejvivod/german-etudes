@@ -942,7 +942,7 @@
         ],
       },
       {
-        key: 'vocab', label: 'Verbs', type: 'radio', choices: [
+        key: 'vocab', label: 'Verbs', type: 'radio', daily: 'anki', choices: [
           { value: 'anki', label: 'My Anki verbs', detail: 'learnt verbs and their example sentences, built-in ones for the rest' },
           { value: 'builtin', label: 'Built-in' },
         ],

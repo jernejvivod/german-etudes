@@ -1,6 +1,7 @@
 // A topic's settings as the shell and the Daily review see them: fitting saved ones to the options offered now, what is
 // wrong with them, and the part that is a topic's learnt scope — every option but those marked round: true, which only
-// shape the topic's own round (its length, the order of the adjectives).
+// shape the topic's own round (its length, the order of the adjectives), and those with a daily value, which the Daily
+// review always uses (daily: 'anki', My Anki words).
 (function (root, factory) {
   const api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;
@@ -31,9 +32,11 @@
     return topic.validate?.(settings) || null;
   }
 
-  // The settings without the round options, keys in the options' order.
+  const inScope = (opt) => !opt.round && !('daily' in opt);
+
+  // The settings without the round and daily options, keys in the options' order.
   function scopeOf(topic, settings) {
-    return Object.fromEntries(topic.options.filter((opt) => !opt.round).map((opt) => [opt.key, settings[opt.key]]));
+    return Object.fromEntries(topic.options.filter(inScope).map((opt) => [opt.key, settings[opt.key]]));
   }
 
   // Whether two settings have the same scope (a stored one is fitted first, as the Daily review would use it).
@@ -42,15 +45,23 @@
     return key(a) === key(b);
   }
 
-  // The chosen parts in words: "Vorgangspassiv · Präsens, Präteritum"; an option with every part ticked is "all …",
-  // and a scope with nothing left out is just "all".
+  // The scope in words, so two of them can be told apart: the chosen parts ("Vorgangspassiv · Präsens, Präteritum"; an
+  // option with every part ticked is "all …", and with nothing left out just "all"), then the switches that are on
+  // ("with hints") and the other choices ("Cards due within: 1 week").
   function scopeText(topic, settings) {
-    const parts = topic.options.filter((opt) => opt.type === 'checkboxes' && !opt.round).map((opt) => {
+    const options = topic.options.filter(inScope);
+    const parts = options.filter((opt) => opt.type === 'checkboxes').map((opt) => {
       const chosen = opt.choices.filter((c) => settings[opt.key]?.includes(c.value));
       const all = chosen.length === opt.choices.length;
       return { all, text: all ? `all ${opt.label.toLowerCase()}` : chosen.map((c) => c.label).join(', ') };
     });
-    return parts.every((p) => p.all) ? 'all' : parts.map((p) => p.text).join(' · ');
+    const words = parts.every((p) => p.all) ? ['all'] : parts.map((p) => p.text);
+    for (const opt of options) {
+      if (opt.type === 'toggle' && settings[opt.key]) words.push(`with ${opt.label.toLowerCase()}`);
+      const choice = opt.type === 'radio' && opt.choices.find((c) => c.value === settings[opt.key]);
+      if (choice) words.push(`${opt.label}: ${choice.label}`);
+    }
+    return words.join(' · ');
   }
 
   return { choiceValues, fitSettings, settingsProblem, scopeOf, sameScope, scopeText };

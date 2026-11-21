@@ -245,7 +245,7 @@
         ],
       },
       {
-        key: 'vocab', label: 'Words', type: 'radio', choices: [
+        key: 'vocab', label: 'Words', type: 'radio', daily: 'anki', choices: [
           { value: 'anki', label: 'My Anki words first', detail: 'sentences with a verb or noun you have learnt come up more often' },
           { value: 'builtin', label: 'Built-in' },
         ],

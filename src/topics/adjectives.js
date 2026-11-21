@@ -433,7 +433,11 @@
   // n sentences in the settings' scope, for the Daily review: shuffled rounds of the chosen mode until there are enough.
   function sentences(settings, n, rnd = Math.random) {
     let items = [];
-    while (items.length < n) items.push(...buildRound({ ...settings, order: 'shuffle' }, rnd));
+    while (items.length < n) {
+      const round = buildRound({ ...settings, order: 'shuffle' }, rnd);
+      if (!round.length) break; // no cell fits the degrees: nothing to add
+      items.push(...round);
+    }
     items = items.slice(0, n);
     return drillStep(settings, items, typedWhole(items));
   }

@@ -47,6 +47,14 @@ test('marking topics learnt and the Daily review', { timeout: 120000, skip }, ()
   assert.equal(await note(), null);
   await choose('20 sentences');
   assert.equal(await note(), null, 'the length is not part of the scope');
+  // Settings that do not work cannot be taken over, but the mark can still be removed.
+  await choose('Präsens');
+  await choose('Präteritum');
+  assert.equal(await text('#options-error'), 'Pick at least one: tenses.');
+  assert.deepEqual(await evaluate(`[...document.querySelectorAll('#options-learnt input, #options-learnt button')].map((c) => c.disabled)`), [false, true]);
+  await choose('Präsens');
+  await choose('Präteritum');
+  assert.equal(await note(), null);
   await key('Escape');
 
   await openTopic('prepositions');

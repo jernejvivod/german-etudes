@@ -228,7 +228,7 @@ test('the Daily review loads each loader once, in turn, and leaves out the topic
 
 test('the Daily review: shares per topic, mixed, each item with its topic, hint and tags; it logs seen and done', async () => {
   fresh();
-  const vocabOption = { key: 'vocab', label: 'Words', type: 'radio', choices: [{ value: 'anki', label: 'Anki' }, { value: 'builtin', label: 'Built-in' }] };
+  const vocabOption = { key: 'vocab', label: 'Words', type: 'radio', daily: 'anki', choices: [{ value: 'anki', label: 'Anki' }, { value: 'builtin', label: 'Built-in' }] };
   const a = stub('a');
   const b = stub('b', { defaults: { parts: ['a'], hints: false, length: 10, vocab: 'builtin' } });
   b.options = [...b.options, vocabOption];
@@ -251,7 +251,7 @@ test('the Daily review: shares per topic, mixed, each item with its topic, hint 
   assert.deepEqual(a.asked[0].settings, { parts: ['a', 'b'], hints: true, length: 4 });
   for (let i = 1; i < step.items.length; i++) assert.notEqual(step.items[i].topic, step.items[i - 1].topic);
   for (const item of step.items) {
-    assert.equal(item.source, item.topic.toUpperCase());
+    assert.equal(item.topicTitle, item.topic.toUpperCase());
     assert.equal(item.hint, `${item.topic} hint`);
     assert.equal(item.hideTags, item.topic !== 'a');
     assert.equal(item.tags[0].text, item.topic);

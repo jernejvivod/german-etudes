@@ -144,7 +144,7 @@
     prepare: vocab.prepare,
     options: [
       {
-        key: 'vocab', label: 'Words', type: 'radio', choices: [
+        key: 'vocab', label: 'Words', type: 'radio', daily: 'anki', choices: [
           { value: 'anki', label: 'My Anki words first', detail: 'pairs with a noun you have learnt come up more often' },
           { value: 'builtin', label: 'Built-in' },
         ],

@@ -32,7 +32,7 @@ test('settingsProblem: at least one, then the topic\'s own rule (Passiv: Zustand
   assert.equal(S.settingsProblem(passive, { ...passive.defaults, tenses: [] }), 'Pick at least one: tenses.');
 });
 
-test('scopeOf drops the round options; sameScope ignores them and fits a stored scope first', () => {
+test('scopeOf drops the round and daily options; sameScope ignores them and fits a stored scope first', () => {
   assert.deepEqual(S.scopeOf(topic, topic.defaults), { parts: ['a', 'b'], mode: 'x', on: false });
   assert.deepEqual(Object.keys(S.scopeOf(topic, { length: 1, on: true, mode: 'y', parts: [] })), ['parts', 'mode', 'on']);
   assert.ok(S.sameScope(topic, { ...topic.defaults, length: 20 }, topic.defaults));
@@ -40,12 +40,16 @@ test('scopeOf drops the round options; sameScope ignores them and fits a stored 
   assert.ok(!S.sameScope(topic, { ...topic.defaults, on: true }, topic.defaults));
   assert.ok(!S.sameScope(passive, { ...passive.defaults, tenses: ['praes'] }, passive.defaults));
   assert.ok(S.sameScope(passive, { ...passive.defaults, length: 20 }, passive.defaults), 'Passiv\'s length is a round option');
+  const daily = { ...topic, options: [...topic.options, { key: 'vocab', label: 'Words', type: 'radio', daily: 'anki', choices: [{ value: 'anki' }, { value: 'builtin' }] }] };
+  assert.deepEqual(Object.keys(S.scopeOf(daily, { ...topic.defaults, vocab: 'builtin' })), ['parts', 'mode', 'on'], 'the review\'s own value');
 });
 
 test('scopeText: the chosen labels, "all …" for a full option, "all" for everything', () => {
   assert.equal(S.scopeText(passive, { ...passive.defaults, tenses: ['praes', 'praet'] }), 'Vorgangspassiv · Präsens, Präteritum');
-  assert.equal(S.scopeText(topic, topic.defaults), 'Alpha, Beta');
-  assert.equal(S.scopeText(topic, { ...topic.defaults, parts: ['a', 'b', 'c'] }), 'all');
+  assert.equal(S.scopeText(topic, topic.defaults), 'Alpha, Beta · Mode: X');
+  assert.equal(S.scopeText(topic, { ...topic.defaults, parts: ['a', 'b', 'c'], on: true }), 'all · Mode: X · with on');
   assert.equal(S.scopeText(passive, { ...passive.defaults, tenses: [...passive.TENSES] }), 'Vorgangspassiv · all tenses');
   assert.equal(S.scopeText({ options: [] }, {}), 'all');
+  const prepositions = require('../src/topics/prepositions.js');
+  assert.equal(S.scopeText(prepositions, { ...prepositions.defaults, hints: true }), 'Akkusativ, Dativ, Wechselpräpositionen, Verbs with fixed prepositions · with adjectives · with hints');
 });

@@ -194,10 +194,9 @@
       const groups = order.map((t, i) => {
         if (!counts[i]) return [];
         const own = { ...byId.get(t.id).settings, length: counts[i] };
-        // The Daily review always draws on My Anki words, whatever the scope says.
-        if (t.options.some((opt) => opt.key === 'vocab')) own.vocab = 'anki';
+        for (const opt of t.options) if ('daily' in opt) own[opt.key] = opt.daily; // My Anki words, whatever was saved
         const step = t.sentences(own, counts[i], rnd);
-        return step.items.map((item) => ({ ...item, topic: t.id, source: t.title, hint: step.hint ?? '', hideTags: !!step.hideTags }));
+        return step.items.map((item) => ({ ...item, topic: t.id, topicTitle: t.title, hint: step.hint ?? '', hideTags: !!step.hideTags }));
       });
       return [{
         type: 'drill',

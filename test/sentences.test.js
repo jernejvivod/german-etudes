@@ -76,10 +76,12 @@ test('a topic\'s Start round has the same sentences as sentences() with its leng
   }
 });
 
-test('the options that shape only a topic\'s own round say so (round: true)', () => {
+test('the options that shape only a topic\'s own round say so (round: true), and My Anki words is the review\'s (daily)', () => {
   for (const t of TOPICS) {
     for (const opt of t.options.filter((o) => o.key === 'length')) assert.equal(opt.round, true, t.id);
   }
   const adjectives = TOPICS.find((t) => t.id === 'adjectives');
   assert.deepEqual(adjectives.options.filter((o) => o.round).map((o) => o.key), ['mode', 'order']);
+  // The Daily review always uses My Anki words.
+  for (const t of TOPICS) for (const opt of t.options.filter((o) => o.key === 'vocab')) assert.equal(opt.daily, 'anki', t.id);
 });
