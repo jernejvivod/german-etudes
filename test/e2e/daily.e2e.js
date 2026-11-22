@@ -101,8 +101,9 @@ test('marking topics learnt and the Daily review', { timeout: 120000, skip }, ()
   assert.equal(await screen(), 'drill');
   assert.equal(await text('#progress-text'), '1 / 10');
   await shot('daily-4-sentence');
+  // The round's items, not those its mistakes review brings back.
   const seen = [];
-  await finishDrill(async (check) => {
+  const { missed, note } = await finishDrill(async (check) => {
     const item = { source: await text('#source'), before: await tagsShown(), hint: await text('#drill-hint') };
     await check();
     item.tags = await tags();
@@ -116,9 +117,13 @@ test('marking topics learnt and the Daily review', { timeout: 120000, skip }, ()
     assert.ok(s.tags.every((tag) => ['Vorgangspassiv', 'Präsens'].includes(tag)), `only the ticked parts: ${s.tags}`);
   }
   assert.equal(new Set(seen.map((s) => s.hint)).size, 2, 'each topic\'s own hint');
+  // Checked empty, the sentences came back in the review, and each was answered right there at once.
+  assert.ok(missed > 0, 'some sentences missed');
+  assert.equal(note, `Now the ones you missed (${missed})`);
 
   assert.equal(await screen(), 'summary');
   assert.match(await text('#mistakes .meta'), /^(Passiv|Präpositionen) · /, 'the mistakes name their topic');
+  assert.equal(await text('#summary-review'), `${missed} missed, answered right in ${missed} ${missed === 1 ? 'try' : 'tries'}`);
   await shot('daily-5-summary');
   await key('Escape');
   assert.equal(await screen(), 'options');
