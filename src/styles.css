@@ -17,6 +17,7 @@
   --g-f: #c2255c;
   --g-n: #2b8a3e;
   --g-pl: #9c6500;
+  --shadow: rgb(0 0 0 / 0.18);
   color-scheme: light dark;
 }
 
@@ -40,6 +41,7 @@
     --g-f: #f783ac;
     --g-n: #69db7c;
     --g-pl: #fcc419;
+    --shadow: rgb(0 0 0 / 0.5);
   }
 }
 
@@ -347,16 +349,32 @@ button.check-title { font-size: 18px; margin-right: auto; color: var(--text); }
 }
 #table-score { text-align: center; margin: 20px 0 0; }
 
-.toast {
+/* The toast (Esc pressed once) and the bar a click on ← Topics or ✕ brings up in a round share the spot; one at a time. */
+.toast, .confirm-leave {
   position: fixed;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
-  padding: 8px 16px;
-  border-radius: 999px;
   background: var(--text);
   color: var(--bg);
   font-size: 14px;
 }
-.toast[hidden] { display: none; }
+.toast { padding: 8px 16px; border-radius: 999px; }
+.confirm-leave {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  max-width: calc(100vw - 40px);
+  padding: 10px 12px 10px 18px;
+  border-radius: 14px;
+  box-shadow: 0 6px 24px var(--shadow);
+}
+.confirm-leave p { flex: 1 1 auto; margin: 0; }
+.confirm-leave button { flex: none; padding: 6px 14px; font-size: 14px; }
+/* The ring sits on the inverted bar: the accent pulled towards the page colour stands out there in either scheme. */
+.confirm-leave button:focus-visible { outline-color: color-mix(in srgb, var(--accent) 70%, var(--bg)); }
+#btn-leave { background: transparent; border-color: color-mix(in srgb, var(--bg) 40%, transparent); color: var(--bg); }
+#btn-stay { background: var(--bg); border-color: var(--bg); color: var(--text); }
+.toast[hidden], .confirm-leave[hidden] { display: none; }

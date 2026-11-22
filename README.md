@@ -16,7 +16,7 @@ npm test    # the tests
 
 On macOS, solved sentences can be read aloud with the system's German voice.
 
-Esc goes up one level (round → options → topic list; Progress → topic list), ⇧Esc straight to the topic list; during a round either needs a second press.
+Esc goes up one level (round → options → topic list; Progress → topic list), ⇧Esc straight to the topic list; during a round either needs a second press. ← Topics and ✕ ask first once something in the round is answered.
 
 ## Install as a Mac app
 
