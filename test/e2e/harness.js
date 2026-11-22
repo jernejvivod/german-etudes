@@ -126,9 +126,74 @@ function driver(send, dir, saidPath) {
   const tickTopic = (topicId, kind) => press(`progress-${topicId}-${kind}`);
   // The learnt marks as stored.
   const learnt = () => evaluate(`Etudes.store.read('etudes-learnt', null)`);
+  // Fills the drill's gaps with values, in order.
+  const fill = (values) => evaluate(`(() => {
+    const inputs = [...document.querySelectorAll('#sentence input')];
+    if (inputs.length !== ${values.length}) throw new Error(\`\${inputs.length} gaps, ${values.length} values\`);
+    inputs.forEach((input, i) => { input.value = ${JSON.stringify(values)}[i]; });
+  })()`);
+  // Gives a topic's round and its Daily review share these sentences, each gap a whole word in braces
+  // ('Das Haus {wird} gebaut.'), tagged E2E; sentence n uses the Anki note e2e-n.
+  const useSentences = (topicId, sentences) => evaluate(`(() => {
+    const { cloze, topics } = Etudes;
+    const topic = topics.find((t) => t.id === ${JSON.stringify(topicId)});
+    const item = (sentence, n) => ({
+      tokens: sentence.split(/\\{([^}]*)\\}/).map((part, i) => (i % 2 ? cloze.wordGap('g' + i, part, 'gap ' + (i + 1) / 2) : part))
+        .filter((part) => part !== ''),
+      tags: [{ text: 'E2E', cls: 'plain' }],
+      explain: 'A sentence of the end-to-end test.',
+      notes: [{ id: 'e2e-' + (n + 1) }],
+    });
+    topic.sentences = () => ({ type: 'drill', label: 'Sentences', hint: '', items: ${JSON.stringify(sentences)}.map(item) });
+    topic.sessions[0].build = () => [topic.sentences()];
+  })()`);
+  const shown = (id) => evaluate(`!document.getElementById(${JSON.stringify(id)}).hidden`);
+  // Checks the drill's item on screen (Enter in a gap) and waits for its verdict.
+  async function check() {
+    await key('Enter');
+    await waitFor(`!document.getElementById('btn-next').hidden`, 'the item to be checked');
+  }
+  const checked = () => shown('btn-next');
+  const verdictOk = () => evaluate(`!!document.querySelector('#feedback .verdict.ok')`);
+  // The drill is in its mistakes review: its tag is on the card.
+  const reviewing = () => evaluate(`!!document.querySelector('#tags .tag.review')`);
+  // The sentence on screen without what is typed or the corrections, to tell the items apart.
+  const sentence = () => evaluate(`(() => {
+    const s = document.getElementById('sentence').cloneNode(true);
+    for (const fix of s.querySelectorAll('.fix')) fix.remove();
+    return s.textContent;
+  })()`);
+  // To the summary of the drill on screen: checks the round's items as they are (visit(check), when given, does the
+  // check, to look at each item before and after), then answers its mistakes review with the corrections shown, in the
+  // round's order, as they come back. An item missed before it was called is not known to it. Resolves to { missed,
+  // note: the note at the review's start }.
+  async function finishDrill(visit = (go) => go()) {
+    const corrections = []; // [{ sentence, values }]: the missed items, the values that get them right
+    while ((await screen()) === 'drill' && !(await reviewing())) {
+      if (!(await checked())) await visit(check);
+      const fixes = await evaluate(`(() => {
+        const inputs = [...document.querySelectorAll('#sentence input')];
+        return inputs.some((i) => i.classList.contains('bad'))
+          && inputs.map((i) => (i.classList.contains('bad') ? i.nextElementSibling.textContent : i.value));
+      })()`);
+      if (fixes) corrections.push({ sentence: await sentence(), values: fixes });
+      await key('Enter'); // next
+    }
+    const inReview = (await screen()) === 'drill';
+    const note = inReview ? await text('#drill-note') : null;
+    for (const { sentence: missed, values } of inReview ? corrections : []) {
+      assert.equal(await sentence(), missed, 'the missed sentences come back in the round\'s order');
+      await fill(values);
+      await check();
+      assert.ok(await verdictOk(), `right in the review: ${values}`);
+      await key('Enter'); // next
+    }
+    assert.equal(await screen(), 'summary');
+    return { missed: corrections.length, note };
+  }
   const said = () => (fs.existsSync(saidPath) ? fs.readFileSync(saidPath, 'utf8').split('\n').filter(Boolean) : []);
   const ranOnTempProfile = () => fs.existsSync(path.join(dir, 'ud', 'Local Storage'));
-  return { send, evaluate, waitFor, screen, focused, toast, leaveBar, click, text, key, type, shot, openTopic, choose, checkedChoices, tickPart, tickTopic, learnt, said, ranOnTempProfile };
+  return { send, evaluate, waitFor, screen, focused, toast, leaveBar, click, text, key, type, shot, openTopic, choose, checkedChoices, tickPart, tickTopic, learnt, shown, fill, check, checked, verdictOk, reviewing, sentence, useSentences, finishDrill, said, ranOnTempProfile };
 }
 
 // Starts the app on a throwaway profile, waits for its topic list and German voice, runs fn(app) and closes it again.

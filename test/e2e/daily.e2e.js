@@ -9,7 +9,7 @@ const { withApp, skip } = require('./harness.js');
 const { dayOf } = require('../../src/core/daily.js');
 
 test('marking topics learnt and the Daily review', { timeout: 120000, skip }, () => withApp(async (app) => {
-  const { evaluate, waitFor, screen, focused, click, text, key, shot, openTopic, choose, checkedChoices, tickPart, tickTopic, learnt, said } = app;
+  const { evaluate, waitFor, screen, focused, click, text, key, shot, openTopic, choose, checkedChoices, tickPart, tickTopic, learnt, finishDrill, said } = app;
   const card = () => text('#daily [data-topic="daily"] .topic-sub');
   const tagsShown = () => evaluate(`document.getElementById('tags').childElementCount > 0`);
   const tags = () => evaluate(`[...document.querySelectorAll('#tags .tag')].map((t) => t.textContent)`);
@@ -102,14 +102,12 @@ test('marking topics learnt and the Daily review', { timeout: 120000, skip }, ()
   assert.equal(await text('#progress-text'), '1 / 10');
   await shot('daily-4-sentence');
   const seen = [];
-  while ((await screen()) === 'drill') {
+  await finishDrill(async (check) => {
     const item = { source: await text('#source'), before: await tagsShown(), hint: await text('#drill-hint') };
-    await key('Enter'); // check
-    await waitFor(CHECKED, 'the item to be checked');
+    await check();
     item.tags = await tags();
     seen.push(item);
-    await key('Enter'); // next
-  }
+  });
   assert.equal(seen.length, 10);
   for (const topic of ['Passiv', 'Präpositionen']) assert.equal(seen.filter((s) => s.source === topic).length, 5, topic);
   for (let i = 1; i < seen.length; i++) assert.notEqual(seen[i].source, seen[i - 1].source, 'the topics take turns');
