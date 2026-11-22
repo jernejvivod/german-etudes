@@ -793,7 +793,7 @@
   // key quits the round only on a second press within 2 s (the toast); a click asks first in the bar, once something in
   // the round would be lost.
   // back: where Stay puts the focus back, where it was when the bar came up.
-  let armed = null; // { target: 'options' | 'home', by: 'key', timer } or { target, by: 'click', back }
+  let armed = null; // { target: 'options' | 'home', by: 'key', timer } or { target, by: 'click', back, at }
   const ARMED_TEXT = { options: 'Press Esc again to quit this round', home: 'Press ⇧Esc again to go to the topic list' };
   const LEAVE_TEXT = { options: 'Leave this round? Its score won\'t be kept.', home: 'Leave this round for the topic list? Its score won\'t be kept.' };
   const ASKING = '#drill .bar > button, #table .bar > button'; // the round's ← Topics and ✕
@@ -834,7 +834,7 @@
   function armClick(target) {
     const back = armed?.back ?? document.activeElement;
     disarm();
-    armed = { target, by: 'click', back };
+    armed = { target, by: 'click', back, at: Date.now() };
     $('confirm-leave-text').textContent = LEAVE_TEXT[target];
     $('confirm-leave').hidden = false;
     $('btn-stay').focus({ focusVisible: true }); // a stray Enter stays
@@ -850,7 +850,12 @@
     else cells.find((c) => !c.readOnly)?.focus();
   }
 
+  // A double-click on ← Topics or ✕ opens the bar; only a later click of the same button leaves.
+  const CLICK_TARGET = { quit: 'options', topics: 'home' };
+  const CONFIRM_AFTER = 500; // ms
+
   function requestLeave(via) {
+    if (armed?.by === 'click' && armed.target === CLICK_TARGET[via] && Date.now() - armed.at < CONFIRM_AFTER) return;
     const action = nav.leaveAction({ screen, via, armed, dirty: roundDirty() });
     if (!action) return;
     if (action.go) leave(action.go);

@@ -83,6 +83,7 @@ test('back to the topic list from every screen', { timeout: 120000, skip }, () =
   assert.ok(await evaluate(CHECKED));
   await click('#drill .to-topics');
   assert.equal(await screen(), 'drill');
+  await sleep(600);
   await click('#drill .to-topics');
   assert.equal(await screen(), 'home');
   await sleep(2500);
@@ -193,8 +194,12 @@ test('a click asks before it ends a round', { timeout: 180000, skip }, () => wit
   assert.match(await text('#progress-text'), /^1 \/ \d+$/);
   assert.ok(await evaluate(CHECKED), 'the item still checked');
 
-  // 5. A second click of the same button leaves.
+  // 5. A double-click only opens the bar; a later second click of the same button leaves.
   await click('#btn-quit');
+  await click('#btn-quit');
+  assert.equal(await screen(), 'drill', 'a double-click does not leave');
+  assert.equal(await leaveBar(), ASK_OPTIONS);
+  await sleep(600);
   await click('#btn-quit');
   assert.equal(await screen(), 'options');
   assert.equal(await leaveBar(), null);
