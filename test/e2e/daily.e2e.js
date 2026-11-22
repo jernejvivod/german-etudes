@@ -9,7 +9,7 @@ const { withApp, skip } = require('./harness.js');
 const { dayOf } = require('../../src/core/daily.js');
 
 test('marking topics learnt and the Daily review', { timeout: 120000, skip }, () => withApp(async (app) => {
-  const { evaluate, waitFor, screen, focused, click, text, key, shot, openTopic, choose, checkedChoices, tickPart, tickTopic, learnt, said } = app;
+  const { evaluate, waitFor, screen, focused, click, text, key, shot, openTopic, choose, checkedChoices, tickPart, tickTopic, learnt, finishDrill, said } = app;
   const card = () => text('#daily [data-topic="daily"] .topic-sub');
   const tagsShown = () => evaluate(`document.getElementById('tags').childElementCount > 0`);
   const tags = () => evaluate(`[...document.querySelectorAll('#tags .tag')].map((t) => t.textContent)`);
@@ -101,15 +101,14 @@ test('marking topics learnt and the Daily review', { timeout: 120000, skip }, ()
   assert.equal(await screen(), 'drill');
   assert.equal(await text('#progress-text'), '1 / 10');
   await shot('daily-4-sentence');
+  // The round's items, not those its mistakes review brings back.
   const seen = [];
-  while ((await screen()) === 'drill') {
+  const { missed, note } = await finishDrill(async (check) => {
     const item = { source: await text('#source'), before: await tagsShown(), hint: await text('#drill-hint') };
-    await key('Enter'); // check
-    await waitFor(CHECKED, 'the item to be checked');
+    await check();
     item.tags = await tags();
     seen.push(item);
-    await key('Enter'); // next
-  }
+  });
   assert.equal(seen.length, 10);
   for (const topic of ['Passiv', 'Präpositionen']) assert.equal(seen.filter((s) => s.source === topic).length, 5, topic);
   for (let i = 1; i < seen.length; i++) assert.notEqual(seen[i].source, seen[i - 1].source, 'the topics take turns');
@@ -118,9 +117,13 @@ test('marking topics learnt and the Daily review', { timeout: 120000, skip }, ()
     assert.ok(s.tags.every((tag) => ['Vorgangspassiv', 'Präsens'].includes(tag)), `only the ticked parts: ${s.tags}`);
   }
   assert.equal(new Set(seen.map((s) => s.hint)).size, 2, 'each topic\'s own hint');
+  // Checked empty, the sentences came back in the review, and each was answered right there at once.
+  assert.ok(missed > 0, 'some sentences missed');
+  assert.equal(note, `Now the ones you missed (${missed})`);
 
   assert.equal(await screen(), 'summary');
   assert.match(await text('#mistakes .meta'), /^(Passiv|Präpositionen) · /, 'the mistakes name their topic');
+  assert.equal(await text('#summary-review'), `${missed} missed, answered right in ${missed} ${missed === 1 ? 'try' : 'tries'}`);
   await shot('daily-5-summary');
   await key('Escape');
   assert.equal(await screen(), 'options');

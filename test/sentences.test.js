@@ -4,8 +4,9 @@
 // is built from.
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { gaps } = require('../src/core/cloze.js');
+const { gaps, grade, correction } = require('../src/core/cloze.js');
 const V = require('../src/core/vocab.js');
+const { choiceValues, settingsProblem } = require('../src/core/scope.js');
 const { mulberry32, isolateStorage, ankiNote, registry } = require('./helpers.js');
 
 const TOPICS = registry();
@@ -49,6 +50,22 @@ test('every sentence topic gives n sentences in the shape the drill and the Dail
         assert.ok(Array.isArray(item.tags), what);
         assert.equal(typeof item.explain, 'string', what);
         assert.ok(item.notes === undefined || Array.isArray(item.notes), what);
+      }
+    }
+  }
+});
+
+// The mistakes review asks for every missed sentence until it is answered right: the correction shown has to be right.
+test('typing the corrections shown gets every sentence right', () => {
+  for (const t of TOPICS) {
+    // The defaults, and every choice ticked where the topic allows that.
+    const all = { ...t.defaults };
+    for (const opt of t.options.filter((o) => o.type === 'checkboxes')) all[opt.key] = choiceValues(opt);
+    const scopes = [t.defaults, ...(settingsProblem(t, all) ? [] : [all])];
+    for (const [settings, seed] of scopes.flatMap((x) => [1, 2, 3].map((seed) => [x, seed]))) {
+      for (const item of t.sentences({ ...settings }, 30, mulberry32(seed)).items) {
+        const graded = grade(item, gaps(item).map(correction));
+        assert.ok(graded.every((g) => g.ok), `${t.id}: ${graded.filter((g) => !g.ok).map((g) => g.value).join(', ')}`);
       }
     }
   }

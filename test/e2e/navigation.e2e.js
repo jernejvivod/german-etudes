@@ -8,7 +8,7 @@ const { withApp, skip, sleep } = require('./harness.js');
 const CHECKED = `!document.getElementById('btn-next').hidden`;
 
 // Steps through a round from its options screen, on a running app.
-function round({ evaluate, waitFor, screen, click, key }) {
+function round({ screen, click, check, finishDrill }) {
   // Passiv's round starts with the auxiliary table; its Continue button leads to the sentences.
   async function startTable() {
     await click('#options-actions button');
@@ -19,19 +19,8 @@ function round({ evaluate, waitFor, screen, click, key }) {
     await click('#btn-table-next');
     assert.equal(await screen(), 'drill');
   }
-  async function check() {
-    await key('Enter');
-    await waitFor(CHECKED, 'the item to be checked');
-  }
-  // To the summary: checks each item (unless it already is) and moves on.
-  async function finishRound() {
-    while ((await screen()) === 'drill') {
-      if (!(await evaluate(CHECKED))) await check();
-      await key('Enter'); // next
-    }
-    assert.equal(await screen(), 'summary');
-  }
-  return { startTable, startDrill, check, finishRound };
+  // To the summary: checks each item (unless it already is), and answers its mistakes review.
+  return { startTable, startDrill, check, finishRound: finishDrill };
 }
 
 test('back to the topic list from every screen', { timeout: 120000, skip }, () => withApp(async (app) => {
@@ -95,7 +84,6 @@ test('back to the topic list from every screen', { timeout: 120000, skip }, () =
   assert.equal(said().length, 1, 'the sentence is read when staying');
 
   // Summary: ← Topics in the bar; Esc → options; Shift+Esc → topic list at once.
-  await key('Enter'); // next
   await finishRound();
   assert.equal(await evaluate(`document.querySelector('#summary .bar .to-topics').getClientRects().length`), 1);
   await shot('summary');

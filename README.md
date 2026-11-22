@@ -16,6 +16,8 @@ npm test    # the tests
 
 On macOS, solved sentences can be read aloud with the system's German voice.
 
+A round of sentences ends with the ones you missed, which come back until each is answered right; the score and the Anki cards count only the first answers.
+
 Esc goes up one level (round → options → topic list; Progress → topic list), ⇧Esc straight to the topic list; during a round either needs a second press. ← Topics and ✕ ask first once something in the round is answered.
 
 ## Install as a Mac app
