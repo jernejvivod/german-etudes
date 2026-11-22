@@ -77,7 +77,7 @@
 
   function show(id) {
     stopSpeaking(); // another screen (Esc, summary, table) ends the sentence being read
-    disarmEscape(); // a round left by a click no longer waits for a second Esc
+    disarm(); // a round left by a click no longer waits for a second Esc or asks in the bar
     screen = id;
     for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== id;
   }
@@ -789,33 +789,95 @@
 
   // ---------- Wiring ----------
 
-  // Esc goes up one level, Shift+Esc to the topic list (nav.js). On a drill or table either quits the round, so it needs a
-  // second press of the same key within 2 s.
-  let armed = null; // { target: 'options' | 'home', timer }
+  // Esc goes up one level, Shift+Esc and ← Topics to the topic list, ✕ to the options (nav.js). On a drill or table a
+  // key quits the round only on a second press within 2 s (the toast); a click asks first in the bar, once something in
+  // the round would be lost.
+  // back: where Stay puts the focus back, where it was when the bar came up.
+  let armed = null; // { target: 'options' | 'home', by: 'key', timer } or { target, by: 'click', back }
   const ARMED_TEXT = { options: 'Press Esc again to quit this round', home: 'Press ⇧Esc again to go to the topic list' };
+  const LEAVE_TEXT = { options: 'Leave this round? Its score won\'t be kept.', home: 'Leave this round for the topic list? Its score won\'t be kept.' };
+  const ASKING = '#drill .bar > button, #table .bar > button'; // the round's ← Topics and ✕
 
-  function disarmEscape() {
+  // A table with every cell right is done: leaving it loses nothing.
+  function tableDone() {
+    return cells.every((c) => c.readOnly);
+  }
+
+  // Leaving now would lose something: a drill with an item checked, a table with a cell filled and not yet all right.
+  // The cards' seen / missed marks are saved on each check, so it is the round's score that goes.
+  function roundDirty() {
+    if (screen === 'drill') return drill.results.length > 0;
+    if (screen === 'table') return !tableDone() && cells.some((c) => c.value.trim());
+    return false;
+  }
+
+  function disarm() {
     if (armed) clearTimeout(armed.timer);
     armed = null;
     $('toast').hidden = true;
+    $('confirm-leave').hidden = true;
+  }
+
+  function leave(target) {
+    if (target === 'home') goHome();
+    else openTopic(topic);
+  }
+
+  function armKey(target) {
+    disarm();
+    armed = { target, by: 'key', timer: setTimeout(disarm, 2000) };
+    $('toast').hidden = false; // shown before the text changes, so screen readers announce it
+    $('toast').textContent = ARMED_TEXT[target];
+  }
+
+  // The bar, in place of the toast; asking for the other target keeps where the focus goes back to.
+  function armClick(target) {
+    const back = armed?.back ?? document.activeElement;
+    disarm();
+    armed = { target, by: 'click', back };
+    $('confirm-leave-text').textContent = LEAVE_TEXT[target];
+    $('confirm-leave').hidden = false;
+    $('btn-stay').focus({ focusVisible: true }); // a stray Enter stays
+  }
+
+  // Closes the bar and puts the focus back in the round: where it was, or where the round goes on.
+  function stay() {
+    const back = armed?.back;
+    disarm();
+    back?.focus();
+    if (back && back !== document.body && document.activeElement === back) return;
+    if (screen === 'drill') (isChecked() ? $('btn-next') : $('sentence').querySelector('input')).focus();
+    else cells.find((c) => !c.readOnly)?.focus();
+  }
+
+  function requestLeave(via) {
+    const action = nav.leaveAction({ screen, via, armed, dirty: roundDirty() });
+    if (!action) return;
+    if (action.go) leave(action.go);
+    else if (action.stay) stay();
+    else if (action.by === 'click') armClick(action.arm);
+    else armKey(action.arm);
   }
 
   function onEscape(toTopics) {
-    const action = nav.escapeAction(screen, toTopics, armed?.target);
-    if (!action) return;
-    if (action.go === 'home') return goHome();
-    if (action.go === 'options') return openTopic(topic);
-    disarmEscape();
-    armed = { target: action.arm, timer: setTimeout(disarmEscape, 2000) };
-    $('toast').hidden = false; // shown before the text changes, so screen readers announce it
-    $('toast').textContent = ARMED_TEXT[action.arm];
+    requestLeave(toTopics ? 'shift-esc' : 'esc');
   }
 
   function onKey(e) {
     if (e.isComposing) return;
-    // A held Esc would arm and leave in one press; Ctrl / Alt / Cmd+Esc belong to the system.
+    // A held Esc would arm and leave in one press; Ctrl / Alt / Cmd+Esc belong to the system. With the bar up, Esc stays
+    // and Shift+Esc goes on to the topic list (nav.js).
     if (e.key === 'Escape') {
       if (!e.repeat && !e.ctrlKey && !e.altKey && !e.metaKey) onEscape(e.shiftKey);
+      return;
+    }
+    // The bar is up: Tab moves between Leave and Stay, Enter and Space click the focused button; nothing else reaches the
+    // round (L, the drill's Enter).
+    if (armed?.by === 'click') {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        (document.activeElement === $('btn-stay') ? $('btn-leave') : $('btn-stay')).focus();
+      }
       return;
     }
     // L replays the solved sentence (the inputs are read-only once checked, so it types nothing).
@@ -850,11 +912,21 @@
     store.write(SPEAK_KEY, speakingOn);
     if (!speakingOn) stopSpeaking();
   });
-  for (const button of document.querySelectorAll('.to-topics')) button.addEventListener('click', goHome);
+  for (const button of document.querySelectorAll('.to-topics')) button.addEventListener('click', () => requestLeave('topics'));
+  // A click on the round's ← Topics or ✕ keeps the focus in the round, for Stay to come back to.
+  for (const button of document.querySelectorAll(ASKING)) {
+    button.addEventListener('mousedown', (e) => e.preventDefault());
+  }
+  $('btn-quit').addEventListener('click', () => requestLeave('quit'));
+  $('btn-leave').addEventListener('click', () => armed && leave(armed.target));
+  $('btn-stay').addEventListener('click', stay);
+  // A press (main button) anywhere but the bar and the buttons that ask means Stay; the click then goes on as usual.
+  document.addEventListener('pointerdown', (e) => {
+    if (armed?.by === 'click' && e.button === 0 && !e.target.closest(`#confirm-leave, ${ASKING}`)) stay();
+  }, true);
   $('btn-progress').addEventListener('click', () => openProgress());
   $('btn-check').addEventListener('click', checkItem);
   $('btn-next').addEventListener('click', nextItem);
-  $('btn-quit').addEventListener('click', () => openTopic(topic));
   $('btn-summary-next').addEventListener('click', nextStep);
   $('tables').addEventListener('keydown', onTableKey);
   $('btn-table-check').addEventListener('click', checkTable);
