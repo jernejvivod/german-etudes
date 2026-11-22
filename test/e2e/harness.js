@@ -87,15 +87,19 @@ function driver(send, dir, saidPath) {
   // The focused element: a topic card by its topic, an input by its label, anything else by its id.
   const focused = () => evaluate(`(() => { const a = document.activeElement; return a.dataset.topic || a.getAttribute('aria-label') || a.id; })()`);
   const toast = () => evaluate(`(() => { const t = document.getElementById('toast'); return t.hidden ? null : t.textContent; })()`);
+  // The bar a click on ← Topics or ✕ brings up in a round: its question, or null when it is not shown.
+  const leaveBar = () => evaluate(`(() => { const b = document.getElementById('confirm-leave'); return b.hidden ? null : b.querySelector('p').textContent; })()`);
   const click = (selector) => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
   const text = (selector) => evaluate(`document.querySelector(${JSON.stringify(selector)}).textContent`);
-  const KEYS = { Escape: 27, Enter: 13, ArrowDown: 40, Space: 32 };
+  const KEYS = { Escape: 27, Enter: 13, ArrowDown: 40, Space: 32, Tab: 9 };
   async function key(name, shift = false, autoRepeat = false) {
     const base = { key: name === 'Space' ? ' ' : name, code: name, windowsVirtualKeyCode: KEYS[name], modifiers: shift ? 8 : 0, autoRepeat };
     // Enter carries text, so that on a button it clicks it as a real key would.
     await send('Input.dispatchKeyEvent', { ...base, type: name === 'Enter' ? 'keyDown' : 'rawKeyDown', ...(name === 'Enter' && { text: '\r' }) });
     await send('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
   }
+  // Types text into the focused input, as an input method would.
+  const type = (text) => send('Input.insertText', { text });
   async function shot(name) {
     if (!process.env.ETUDES_SHOTS) return;
     await evaluate('window.scrollTo(0, 0)'); // the bar is at the top; focus may have scrolled down to a button
@@ -124,7 +128,7 @@ function driver(send, dir, saidPath) {
   const learnt = () => evaluate(`Etudes.store.read('etudes-learnt', null)`);
   const said = () => (fs.existsSync(saidPath) ? fs.readFileSync(saidPath, 'utf8').split('\n').filter(Boolean) : []);
   const ranOnTempProfile = () => fs.existsSync(path.join(dir, 'ud', 'Local Storage'));
-  return { send, evaluate, waitFor, screen, focused, toast, click, text, key, shot, openTopic, choose, checkedChoices, tickPart, tickTopic, learnt, said, ranOnTempProfile };
+  return { send, evaluate, waitFor, screen, focused, toast, leaveBar, click, text, key, type, shot, openTopic, choose, checkedChoices, tickPart, tickTopic, learnt, said, ranOnTempProfile };
 }
 
 // Starts the app on a throwaway profile, waits for its topic list and German voice, runs fn(app) and closes it again.
