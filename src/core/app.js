@@ -549,6 +549,7 @@
     const { review } = drill;
     const done = review ? (review.total - mistakes.left(review)) / review.total : drill.results.length / drill.items.length;
     $('progress-fill').style.width = `${done * 100}%`;
+    if (review) $('progress-text').textContent = mistakes.counter(review); // a right answer counts at once
   }
 
   // The item's tags (shown: false leaves them out until checked), after the mistakes review's own.

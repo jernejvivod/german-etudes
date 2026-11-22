@@ -53,6 +53,8 @@ test('the texts', () => {
   const rv = { queue: ['a', 'b'], total: 3, tries: 5, last: null };
   assert.equal(M.note(rv), 'Now the ones you missed (3)');
   assert.equal(M.counter(rv), 'Mistakes · 2 left');
+  assert.equal(M.counter({ ...rv, last: true }), 'Mistakes · 1 left', 'a right answer counts at once');
+  assert.equal(M.counter({ ...rv, last: false }), 'Mistakes · 2 left');
   assert.equal(M.outcome(rv), '3 missed, answered right in 5 tries');
   assert.equal(M.outcome({ queue: [], total: 1, tries: 1, last: true }), '1 missed, answered right in 1 try');
 });

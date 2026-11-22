@@ -43,7 +43,7 @@
 
   // The note at the review's start, the progress counter, and the line on the summary.
   const note = (review) => `Now the ones you missed (${review.total})`;
-  const counter = (review) => `Mistakes · ${review.queue.length} left`;
+  const counter = (review) => `Mistakes · ${left(review)} left`;
   const outcome = (review) => `${review.total} missed, answered right in ${review.tries} ${review.tries === 1 ? 'try' : 'tries'}`;
 
   return { wrong, missed, start, check, next, left, note, counter, outcome };
