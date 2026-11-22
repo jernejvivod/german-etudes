@@ -15,19 +15,21 @@
 //   listing(settings): [{ title, text }] rows shown under the intro (a daily exercise's learnt topics)
 // A step is { type: 'drill', label, items, hint?, hideTags?, onChecked?, onDone? } or
 //   { type: 'table', label, table, topicTitle?, onChecked? }.
-//   A drill's onChecked(item, ok) runs after each item is checked, onDone() when the drill reaches its summary.
+//   A drill's onChecked(item, ok) runs after each item's first check, onDone() when the drill reaches its summary, after
+//   its mistakes review: the items answered wrong come back (mistakes.js) until each has been answered right.
 //   A table's onChecked({ correct, total }) runs after each check; topicTitle names the topic it comes from (Daily
 //   tables), shown above it.
 // A drill item may bring its own hint, hideTags and topicTitle (the topic it comes from, shown above it): the Daily
 // review mixes topics in one drill.
 // A drill item may name the Anki notes it uses (notes): once it is checked right they count as shown (vocab.markShown),
-// so the next rounds bring other cards; checked wrong, they are not held back (vocab.markMissed).
+// so the next rounds bring other cards; checked wrong, they are not held back (vocab.markMissed). The first answer
+// counts: the mistakes review records nothing.
 // A table cell's answer is a string or a list of accepted strings (the first is shown as the correction); a block with
 // exact: true checks upper / lower case too (Ihr is not ihr).
 (function () {
   'use strict';
 
-  const { cloze, nav, topics, vocab, store, scope, daily, progress } = window.Etudes;
+  const { cloze, nav, mistakes, topics, vocab, store, scope, daily, progress } = window.Etudes;
   const $ = (id) => document.getElementById(id);
 
   // The daily exercises, shown above the topics.
@@ -46,7 +48,8 @@
   let session = null; // { steps, index }
   let preparing = null; // the topic whose data is still loading, if any
   let prepareError = null;
-  let drill = null; // { step, items, index, results: [{ item, grades }] }
+  // results: the first tries; review: the mistakes review (mistakes.js) once the round's items are done, else null.
+  let drill = null; // { step, items, index, results: [{ item, grades }], review }
   let cells = []; // table inputs, block by block, each block column-major
   let cellInfo = new Map(); // input → { idx, b, c, r, gap }
   let blocks = []; // per block { start, rows, cols }
@@ -524,7 +527,7 @@
   // ---------- Drill ----------
 
   function startDrill(step) {
-    drill = { step, items: step.items, index: 0, results: [] };
+    drill = { step, items: step.items, index: 0, results: [], review: null };
     show('drill');
     renderItem();
   }
@@ -532,23 +535,41 @@
   // An item's own setting first: the Daily review mixes topics in one drill.
   const hidesTags = (item) => !!(item.hideTags ?? drill.step.hideTags);
 
-  function isChecked() {
-    return drill.results.length > drill.index;
+  // The item on screen: the round's, or the one the mistakes review is at.
+  function current() {
+    return drill.review ? drill.review.queue[0] : drill.items[drill.index];
   }
 
+  function isChecked() {
+    return drill.review ? drill.review.last !== null : drill.results.length > drill.index;
+  }
+
+  // The round's share checked; in the mistakes review, the share answered right, from 0 again.
   function updateProgress() {
-    $('progress-fill').style.width = `${(drill.results.length / drill.items.length) * 100}%`;
+    const { review } = drill;
+    const done = review ? (review.total - mistakes.left(review)) / review.total : drill.results.length / drill.items.length;
+    $('progress-fill').style.width = `${done * 100}%`;
+  }
+
+  // The item's tags (shown: false leaves them out until checked), after the mistakes review's own.
+  function renderTags(item, shown) {
+    $('tags').replaceChildren(drill.review ? el('span', 'tag review', 'Mistakes') : '', shown ? tagsFragment(item) : '');
   }
 
   function renderItem() {
     stopSpeaking();
-    const item = drill.items[drill.index];
+    const item = current();
+    const { review } = drill;
 
-    $('progress-text').textContent = `${drill.index + 1} / ${drill.items.length}`;
+    // The note opens the mistakes review, on its first item until it is checked through.
+    const note = $('drill-note');
+    note.hidden = review?.tries !== 0;
+    note.textContent = note.hidden ? '' : mistakes.note(review); // set once shown, so screen readers announce it
+    $('progress-text').textContent = review ? mistakes.counter(review) : `${drill.index + 1} / ${drill.items.length}`;
     updateProgress();
     $('source').textContent = item.topicTitle || '';
     $('source').hidden = !item.topicTitle;
-    $('tags').replaceChildren(hidesTags(item) ? '' : tagsFragment(item));
+    renderTags(item, !hidesTags(item));
     $('drill-hint').textContent = item.hint ?? drill.step.hint ?? '';
 
     const prompt = $('prompt');
@@ -577,7 +598,7 @@
   }
 
   function checkItem() {
-    const item = drill.items[drill.index];
+    const item = current();
     const inputs = [...$('sentence').querySelectorAll('input')];
     const grades = cloze.grade(item, inputs.map((i) => i.value));
 
@@ -588,13 +609,16 @@
     });
 
     const allOk = grades.every((g) => g.ok);
-    drill.results.push({ item, grades });
-    if (allOk) vocab.markShown(item.notes);
-    else vocab.markMissed(item.notes);
-    drill.step.onChecked?.(item, allOk);
+    if (drill.review) drill.review = mistakes.check(drill.review, allOk);
+    else {
+      drill.results.push({ item, grades });
+      if (allOk) vocab.markShown(item.notes);
+      else vocab.markMissed(item.notes);
+      drill.step.onChecked?.(item, allOk);
+    }
     updateProgress();
 
-    if (hidesTags(item)) $('tags').replaceChildren(tagsFragment(item));
+    if (hidesTags(item)) renderTags(item, true);
 
     const answer = el('p', 'answer');
     answer.append(answerFragment(item));
@@ -618,9 +642,19 @@
     $('btn-next').focus();
   }
 
+  // After the round's last item, its mistakes review, if it has mistakes; the summary once that is done. The review
+  // stays on drill.review for the summary.
   function nextItem() {
+    if (drill.review) {
+      const review = mistakes.next(drill.review);
+      if (!review) return showSummary();
+      drill.review = review;
+      return renderItem();
+    }
     drill.index++;
-    if (drill.index < drill.items.length) renderItem();
+    if (drill.index < drill.items.length) return renderItem();
+    drill.review = mistakes.start(mistakes.missed(drill.results));
+    if (drill.review) renderItem();
     else showSummary();
   }
 
@@ -628,12 +662,14 @@
 
   function showSummary() {
     drill.step.onDone?.();
-    const mistakes = drill.results.filter((r) => r.grades.some((g) => !g.ok));
-    $('summary-score').textContent = `${drill.results.length - mistakes.length} / ${drill.results.length} sentences correct`;
+    const missed = drill.results.filter(mistakes.wrong);
+    $('summary-score').textContent = `${drill.results.length - missed.length} / ${drill.results.length} sentences correct`;
+    $('summary-review').textContent = drill.review ? mistakes.outcome(drill.review) : '';
+    $('summary-review').hidden = !drill.review;
 
     const list = $('mistakes');
     list.replaceChildren();
-    for (const { item, grades } of mistakes) {
+    for (const { item, grades } of missed) {
       const sent = el('div', 'sent');
       sent.append(answerFragment(item));
       const wrong = grades.filter((g) => !g.ok).map((g) => cloze.typed(g.gap, g.value));
@@ -643,7 +679,7 @@
       li.append(sent, meta);
       list.append(li);
     }
-    list.hidden = mistakes.length === 0;
+    list.hidden = missed.length === 0;
 
     $('btn-summary-next').textContent = nextStepLabel();
     show('summary');
@@ -803,7 +839,8 @@
     return cells.every((c) => c.readOnly);
   }
 
-  // Leaving now would lose something: a drill with an item checked, a table with a cell filled and not yet all right.
+  // Leaving now would lose something: a drill with an item checked (so also one in its mistakes review), a table with a
+  // cell filled and not yet all right.
   // The cards' seen / missed marks are saved on each check, so it is the round's score that goes.
   function roundDirty() {
     if (screen === 'drill') return drill.results.length > 0;
